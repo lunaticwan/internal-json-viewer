@@ -1,5 +1,7 @@
 <script>
+  import { onMount } from 'svelte';
   import { JSONEditor, Mode } from 'svelte-jsoneditor';
+  import { onRenderMenu, onRenderContextMenu, setupI18nObserver } from './i18n.js';
 
   let content = $state({
     json: {
@@ -26,6 +28,11 @@
   let isPasteModalOpen = $state(false);
   let pasteTextValue = $state('');
   let pasteError = $state('');
+
+  onMount(() => {
+    const cleanup = setupI18nObserver();
+    return cleanup;
+  });
 
   function handleModeChange(newMode) {
     mode = newMode;
@@ -107,7 +114,7 @@
     <div class="brand">
       <div class="logo-icon">&#123;&#125;</div>
       <h1>JSON Editor Pro</h1>
-      <span class="badge">Offline / Static</span>
+      <span class="badge">오프라인 / 정적 웹</span>
     </div>
 
     <div class="toolbar">
@@ -125,7 +132,7 @@
       <div class="divider"></div>
 
       <div class="button-group">
-        <button onclick={triggerFileUpload} class="btn btn-primary">
+        <button onclick={triggerFileUpload} class="btn btn-primary" title="JSON 파일 읽어오기">
           <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="17 8 12 3 7 8"></polyline>
@@ -135,7 +142,7 @@
         </button>
         <input bind:this={fileInput} type="file" accept=".json,application/json,text/plain" onchange={handleFileUpload} style="display: none;" />
 
-        <button onclick={openPasteModal} class="btn btn-secondary">
+        <button onclick={openPasteModal} class="btn btn-secondary" title="클립보드에서 JSON 텍스트 직접 붙여넣기">
           <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
             <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
@@ -143,7 +150,7 @@
           직접 붙여넣기
         </button>
 
-        <button onclick={triggerTransform} class="btn btn-secondary">
+        <button onclick={triggerTransform} class="btn btn-secondary" title="데이터 정렬 및 필터링 변환 창 열기">
           <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
           </svg>
@@ -158,6 +165,8 @@
       bind:this={editorRef}
       {content}
       {mode}
+      {onRenderMenu}
+      {onRenderContextMenu}
       onChange={handleContentChange}
       onChangeMode={handleModeChange}
     />
@@ -170,7 +179,7 @@
     <div class="modal-content" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
       <div class="modal-header">
         <h2 id="modal-title">JSON 데이터 붙여넣기</h2>
-        <button class="modal-close-btn" onclick={closePasteModal}>&times;</button>
+        <button class="modal-close-btn" onclick={closePasteModal} title="닫기">&times;</button>
       </div>
       <div class="modal-body">
         <p class="modal-desc">JSON 텍스트를 입력창에 붙여넣고 적용 버튼을 누르세요.</p>
