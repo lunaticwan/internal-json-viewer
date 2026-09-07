@@ -120,11 +120,11 @@
     <div class="toolbar">
       <div class="button-group">
         <label class="btn-label">
-          <span>모드:</span>
+          <span>Mode:</span>
           <select value={mode} onchange={(e) => handleModeChange(e.target.value)} class="select-mode">
             <option value={Mode.tree}>Tree 모드</option>
             <option value={Mode.table}>Table 모드</option>
-            <option value={Mode.text}>Code (텍스트) 모드</option>
+            <option value={Mode.text}>Code 모드</option>
           </select>
         </label>
       </div>
@@ -132,17 +132,17 @@
       <div class="divider"></div>
 
       <div class="button-group">
-        <button onclick={triggerFileUpload} class="btn btn-primary" title="JSON 파일 읽어오기">
+        <button onclick={triggerFileUpload} class="btn btn-primary" title="JSON 파일 열기">
           <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="17 8 12 3 7 8"></polyline>
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
-          파일 열기 (JSON)
+          JSON 파일 열기
         </button>
         <input bind:this={fileInput} type="file" accept=".json,application/json,text/plain" onchange={handleFileUpload} style="display: none;" />
 
-        <button onclick={openPasteModal} class="btn btn-secondary" title="클립보드에서 JSON 텍스트 직접 붙여넣기">
+        <button onclick={openPasteModal} class="btn btn-secondary" title="JSON 텍스트 직접 붙여넣기">
           <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
             <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
@@ -150,11 +150,11 @@
           직접 붙여넣기
         </button>
 
-        <button onclick={triggerTransform} class="btn btn-secondary" title="데이터 정렬 및 필터링 변환 창 열기">
+        <button onclick={triggerTransform} class="btn btn-secondary" title="Transform (Filter, Sort) 창 열기">
           <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
           </svg>
-          정렬 / 필터 (Transform)
+          Transform
         </button>
       </div>
     </div>
