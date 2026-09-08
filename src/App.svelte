@@ -4,21 +4,53 @@
   import { onRenderMenu, onRenderContextMenu, setupI18nObserver } from './i18n.js';
 
   let content = $state({
-    json: {
-      appName: "Offline JSON Editor",
-      version: "1.0.0",
-      features: [
-        "Tree Mode",
-        "Table Mode",
-        "Code Text Mode",
-        "Transform / Sort / Filter",
-        "File Load & Paste"
-      ],
-      settings: {
-        offline: true,
-        networkCalls: false
+    json: [
+      {
+        "id": 1,
+        "name": "JSON Editor Pro",
+        "category": "Developer Tool",
+        "status": "Active",
+        "version": "1.0.0",
+        "offlineSupport": true,
+        "description": "오프라인 및 정적 웹 환경을 지원하는 JSON 에디터"
+      },
+      {
+        "id": 2,
+        "name": "Tree Mode Visualizer",
+        "category": "Feature",
+        "status": "Active",
+        "version": "1.2.0",
+        "offlineSupport": true,
+        "description": "JSON 구조를 계층적 트리 형태로 시각화 및 편집"
+      },
+      {
+        "id": 3,
+        "name": "Table Grid Viewer",
+        "category": "Feature",
+        "status": "Active",
+        "version": "1.1.0",
+        "offlineSupport": true,
+        "description": "객체 배열 데이터를 표(Table) 형태로 조회 및 수정"
+      },
+      {
+        "id": 4,
+        "name": "Code Text Mode",
+        "category": "Feature",
+        "status": "Active",
+        "version": "1.0.0",
+        "offlineSupport": true,
+        "description": "텍스트 기반의 원본 JSON 직접 편집 기능"
+      },
+      {
+        "id": 5,
+        "name": "Transform & Filter Engine",
+        "category": "Utility",
+        "status": "Active",
+        "version": "1.3.0",
+        "offlineSupport": true,
+        "description": "JMESPath Query 기반 정렬, 필터링 및 변환"
       }
-    }
+    ]
   });
 
   let mode = $state(Mode.tree);
