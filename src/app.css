@@ -5,25 +5,27 @@
 }
 
 :root {
-  --jse-font-family: local('Pretendard'), 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-  --jse-font-family-mono: local('Cascadia Code'), 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+  --app-font-ui: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  --app-font-code: 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+  --jse-font-family: var(--app-font-ui);
+  --jse-font-family-mono: var(--app-font-code);
 }
 
 html, body, #app {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: local('Pretendard'), 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  font-family: var(--app-font-ui);
   background-color: #f8fafc;
   color: #0f172a;
 }
 
-/* Pretendard 단일 적용 - 메뉴 및 전역 UI 영역 */
+/* 전역 UI 및 에디터 UI 영역 폰트 적용 */
 body, button, input, select, textarea, .jse-main, .jse-menu, .jse-context-menu, .jse-modal {
-  font-family: local('Pretendard'), 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  font-family: var(--app-font-ui);
 }
 
-/* Cascadia Code 단일 적용 - 코드 및 데이터 편집 영역 */
+/* 코드 및 데이터 편집 영역 폰트 적용 */
 .jse-contents,
 .jse-text-mode,
 .jse-code-mode,
@@ -38,5 +40,5 @@ body, button, input, select, textarea, .jse-main, .jse-menu, .jse-context-menu, 
 code,
 pre,
 .jse-mono {
-  font-family: local('Cascadia Code'), 'Cascadia Code', 'Cascadia Mono', Consolas, monospace !important;
+  font-family: var(--app-font-code) !important;
 }
