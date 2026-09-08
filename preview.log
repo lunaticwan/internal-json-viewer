@@ -1,7 +1,7 @@
 
 > offline-json-editor@1.0.0 preview
-> vite preview
+> vite preview --port 4173
 
-7:02:38 AM [vite-plugin-svelte] no Svelte config found at /app - using default configuration.
+12:19:09 PM [vite-plugin-svelte] no Svelte config found at /app - using default configuration.
   ➜  Local:   http://localhost:4173/
   ➜  Network: use --host to expose
