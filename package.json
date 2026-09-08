@@ -1,12 +1,16 @@
 {
   "name": "offline-json-editor",
+  "productName": "iM뱅크 JSON 에디터",
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:serve": "vite build && electron .",
+    "electron:build": "vite build && electron-builder"
   },
   "dependencies": {
     "svelte": "^5.57.0",
@@ -14,7 +18,35 @@
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3",
     "vite": "^8.2.2",
     "vite-plugin-pwa": "^1.3.0"
+  },
+  "build": {
+    "appId": "com.imbank.jsoneditor",
+    "productName": "iM뱅크 JSON 에디터",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "iM-Bank-JSON-Editor-${version}-setup.exe"
+    },
+    "portable": {
+      "artifactName": "iM-Bank-JSON-Editor-${version}-portable.exe"
+    }
   }
 }

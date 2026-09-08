@@ -7,12 +7,12 @@
     json: [
       {
         "id": 1,
-        "name": "JSON Editor Pro",
+        "name": "iM뱅크 JSON 에디터",
         "category": "Developer Tool",
         "status": "Active",
         "version": "1.0.0",
         "offlineSupport": true,
-        "description": "오프라인 및 정적 웹 환경을 지원하는 JSON 에디터"
+        "description": "iM뱅크 사내 오프라인 및 웹 지원 JSON 에디터"
       },
       {
         "id": 2,
@@ -82,8 +82,8 @@
   <header class="header">
     <div class="brand">
       <div class="logo-icon">&#123;&#125;</div>
-      <h1>JSON Editor Pro</h1>
-      <span class="badge">오프라인 / 정적 웹</span>
+      <h1>iM뱅크 JSON 에디터</h1>
+      <span class="badge">iM뱅크 오프라인</span>
     </div>
 
     <div class="toolbar">
