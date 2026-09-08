@@ -1,4 +1,20 @@
-// Korean translation mapping and i18n helpers for JSON Editor Pro
+// Korean and English translation mapping and i18n helpers for JSON Editor Pro
+// Non-English and non-Korean language packs are excluded. Default language is Korean ('ko').
+
+export const DEFAULT_LANGUAGE = 'ko';
+export const SUPPORTED_LANGUAGES = ['ko', 'en'];
+
+let currentLanguage = DEFAULT_LANGUAGE;
+
+export function getCurrentLanguage() {
+  return currentLanguage;
+}
+
+export function setLanguage(lang) {
+  if (SUPPORTED_LANGUAGES.includes(lang)) {
+    currentLanguage = lang;
+  }
+}
 
 const menuTitleMap = {
   'Expand all': '전체 펼치기',
@@ -74,6 +90,7 @@ const contextTitleMap = {
 
 function translateMenuTitle(title) {
   if (!title) return title;
+  if (currentLanguage !== 'ko') return title;
   if (menuTitleMap[title]) return menuTitleMap[title];
 
   if (title.startsWith('Switch to text mode')) {
@@ -97,6 +114,7 @@ function translateMenuTitle(title) {
 
 function translateContextTitle(title) {
   if (!title) return title;
+  if (currentLanguage !== 'ko') return title;
   if (contextTitleMap[title]) return contextTitleMap[title];
 
   if (title.includes('structure like the first item in the array')) {
@@ -145,7 +163,7 @@ export function onRenderContextMenu(items, context) {
 
     const newItem = { ...item };
 
-    if (newItem.text && contextTextMap[newItem.text]) {
+    if (newItem.text && currentLanguage === 'ko' && contextTextMap[newItem.text]) {
       newItem.text = contextTextMap[newItem.text];
     }
 
@@ -167,11 +185,13 @@ export function onRenderContextMenu(items, context) {
   return items.map(processItem);
 }
 
-// DOM Translation observer for elements like SearchBox, NavigationBar, Welcome screen, Node tooltips, Modals
+// DOM Translation observer for elements like SearchBox, NavigationBar, Welcome screen, Node tooltips, Modals, Statusbar
 export function setupI18nObserver() {
   if (typeof document === 'undefined') return;
 
   function translateDOM() {
+    if (currentLanguage !== 'ko') return;
+
     // 1. SearchBox elements
     const searchInputs = document.querySelectorAll('.jse-search-input');
     searchInputs.forEach((input) => {
@@ -249,7 +269,7 @@ export function setupI18nObserver() {
 
     const welcomeInfo = document.querySelector('.jse-welcome-info');
     if (welcomeInfo && welcomeInfo.textContent.includes('You can paste clipboard data using')) {
-      welcomeInfo.innerHTML = '<b>Ctrl+V</b>를 눌러 클립보드 데이터를 Paste 하거나, 아래 버튼을 클릭하세요:';
+      welcomeInfo.innerHTML = '<b>Ctrl+V</b>를 눌러 클립보드 데이터를 Paste 하거나, 아래 버튼을 클릭:';
     }
 
     const welcomeBtns = document.querySelectorAll('.jse-welcome button');
@@ -263,7 +283,7 @@ export function setupI18nObserver() {
       }
     });
 
-    // 4. Tree Node Tooltips
+    // 4. Tree Node Tooltips & Buttons
     const expandArrayBtns = document.querySelectorAll('[title*="Expand or collapse this array"]');
     expandArrayBtns.forEach((btn) => {
       btn.title = 'Array 펼치기/접기 (Ctrl+클릭으로 하위 항목 포함 전체 펼치기/접기)';
@@ -277,6 +297,16 @@ export function setupI18nObserver() {
     const contextExplanationBtns = document.querySelectorAll('[title*="Click or Right-click to open context menu"]');
     contextExplanationBtns.forEach((btn) => {
       btn.title = '클릭 또는 우클릭하여 Context Menu 열기';
+    });
+
+    const dragBtns = document.querySelectorAll('[title="Drag to move or insert"]');
+    dragBtns.forEach((btn) => {
+      btn.title = '드래그하여 이동 또는 삽입';
+    });
+
+    const insertBtns = document.querySelectorAll('[title="Insert a new item"]');
+    insertBtns.forEach((btn) => {
+      btn.title = '새 항목 삽입';
     });
 
     // 5. Modals (Sort / Transform)
@@ -296,11 +326,20 @@ export function setupI18nObserver() {
       if (th.textContent.trim() === 'Direction') th.textContent = 'Direction';
     });
 
-    const modalPrimaryBtns = document.querySelectorAll('.jse-modal-contents .jse-actions button.jse-primary');
-    modalPrimaryBtns.forEach((btn) => {
-      if (btn.textContent.trim() === 'Sort') {
+    const selectOptions = document.querySelectorAll('.jse-modal-contents select option');
+    selectOptions.forEach((opt) => {
+      if (opt.textContent.trim() === 'Ascending') opt.textContent = '오름차순';
+      if (opt.textContent.trim() === 'Descending') opt.textContent = '내림차순';
+    });
+
+    const modalBtns = document.querySelectorAll('.jse-modal-contents button, .jse-modal button');
+    modalBtns.forEach((btn) => {
+      const text = btn.textContent.trim();
+      if (text === 'Cancel') {
+        btn.textContent = '취소';
+      } else if (text === 'Sort') {
         btn.textContent = 'Sort';
-      } else if (btn.textContent.trim() === 'Transform') {
+      } else if (text === 'Transform') {
         btn.textContent = 'Transform';
       }
     });
@@ -314,6 +353,27 @@ export function setupI18nObserver() {
       if (text === 'Query') label.textContent = 'Query';
       if (text.includes('Original')) label.childNodes[label.childNodes.length - 1].nodeValue = ' Original';
       if (text === 'Preview') label.textContent = 'Preview';
+    });
+
+    // 6. Table Mode UI
+    const sortColAscBtns = document.querySelectorAll('[title="Sort column ascending"]');
+    sortColAscBtns.forEach((btn) => {
+      btn.title = '열 오름차순 Sort';
+    });
+
+    const sortColDescBtns = document.querySelectorAll('[title="Sort column descending"]');
+    sortColDescBtns.forEach((btn) => {
+      btn.title = '열 내림차순 Sort';
+    });
+
+    const hideColBtns = document.querySelectorAll('[title="Hide column"]');
+    hideColBtns.forEach((btn) => {
+      btn.title = '열 숨기기';
+    });
+
+    const showHiddenColsBtns = document.querySelectorAll('[title="Show hidden columns"]');
+    showHiddenColsBtns.forEach((btn) => {
+      btn.title = '숨겨진 열 표시';
     });
   }
 
