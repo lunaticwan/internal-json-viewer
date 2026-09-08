@@ -1,6 +1,7 @@
-import { app, BrowserWindow, Menu, shell, dialog } from 'electron';
+import { app, BrowserWindow, Menu, shell, dialog, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -126,6 +127,41 @@ function createMenu() {
 }
 
 app.whenReady().then(() => {
+  ipcMain.handle('get-system-fonts', async () => {
+    return new Promise((resolve) => {
+      if (process.platform === 'win32') {
+        const cmd = 'powershell -NoProfile -ExecutionPolicy Bypass -Command "[System.Drawing.FontFamily]::Families | Select-Object -ExpandProperty Name"';
+        exec(cmd, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
+          if (err || !stdout) {
+            resolve([]);
+            return;
+          }
+          const fonts = stdout
+            .split(/\r?\n/)
+            .map((f) => f.trim())
+            .filter((f) => f.length > 0);
+          const uniqueFonts = Array.from(new Set(fonts)).sort((a, b) => a.localeCompare(b));
+          resolve(uniqueFonts);
+        });
+      } else if (process.platform === 'darwin') {
+        exec('fc-list : family | sort -u', { encoding: 'utf8' }, (err, stdout) => {
+          if (err || !stdout) {
+            resolve([]);
+            return;
+          }
+          const fonts = stdout
+            .split(/\r?\n/)
+            .map((f) => f.trim())
+            .filter((f) => f.length > 0);
+          const uniqueFonts = Array.from(new Set(fonts)).sort((a, b) => a.localeCompare(b));
+          resolve(uniqueFonts);
+        });
+      } else {
+        resolve([]);
+      }
+    });
+  });
+
   createWindow();
 
   app.on('activate', () => {
