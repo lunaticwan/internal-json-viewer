@@ -375,6 +375,20 @@ export function setupI18nObserver() {
     showHiddenColsBtns.forEach((btn) => {
       btn.title = '숨겨진 열 표시';
     });
+
+    // 7. Additional menu buttons and tooltips in editor toolbar
+    const menuButtons = document.querySelectorAll('.jse-menu button');
+    menuButtons.forEach((btn) => {
+      const title = btn.getAttribute('title');
+      if (title && menuTitleMap[title]) {
+        btn.setAttribute('title', menuTitleMap[title]);
+      } else if (title) {
+        const translated = translateMenuTitle(title);
+        if (translated !== title) {
+          btn.setAttribute('title', translated);
+        }
+      }
+    });
   }
 
   // Initial translation check

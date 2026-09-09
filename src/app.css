@@ -9,6 +9,26 @@
   --app-font-code: 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
   --jse-font-family: var(--app-font-ui);
   --jse-font-family-mono: var(--app-font-code);
+  --jse-font-size: 15px;
+  --jse-menu-font-size: 15px;
+  --jse-button-size: 38px;
+}
+
+/* svelte-jsoneditor 상단 메뉴바 및 버튼/아이콘 사이즈 조정 */
+.jse-menu {
+  min-height: 48px !important;
+  padding: 4px 8px !important;
+}
+
+.jse-menu button {
+  min-width: 38px !important;
+  height: 38px !important;
+  font-size: 15px !important;
+}
+
+.jse-menu button svg {
+  width: 20px !important;
+  height: 20px !important;
 }
 
 html, body, #app {
