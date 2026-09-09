@@ -47,12 +47,12 @@
     json: [
       {
         "id": 1,
-        "name": "iM뱅크JSON",
+        "name": "iMJSON",
         "category": "Developer Tool",
         "status": "Active",
         "version": "1.0.0",
         "offlineSupport": true,
-        "description": "iM뱅크 사내 내부망 JSON 에디터"
+        "description": "iMJSON 사내 내부망 JSON 에디터"
       },
       {
         "id": 2,
@@ -109,7 +109,7 @@
     document.documentElement.style.setProperty('--jse-font-size', `${fontSize}px`);
     document.documentElement.style.setProperty('--jse-font-size-mono', `${fontSize}px`);
     try {
-      localStorage.setItem('imbank_font_size', String(fontSize));
+      localStorage.setItem('imjson_font_size', String(fontSize));
     } catch (err) {
       console.error('Failed to save font size:', err);
     }
@@ -117,7 +117,7 @@
 
   function loadFontSize() {
     try {
-      const saved = localStorage.getItem('imbank_font_size');
+      const saved = localStorage.getItem('imjson_font_size') || localStorage.getItem('imbank_font_size');
       if (saved) {
         const parsed = parseInt(saved, 10);
         if (!isNaN(parsed) && fontSizes.includes(parsed)) {
@@ -171,7 +171,7 @@
     // 2. 툴바 좌측 상단에 브랜딩 및 개별 기능 버튼 흡수
     const customBrandLabel = {
       type: 'button',
-      text: 'iM뱅크JSON',
+      text: 'iMJSON',
       className: 'jse-brand-label',
       onClick: () => {}
     };
@@ -246,7 +246,7 @@
     document.documentElement.style.setProperty('--app-font-code', codeFontCSS);
 
     // Save settings
-    localStorage.setItem('imbank_font_settings', JSON.stringify({
+    localStorage.setItem('imjson_font_settings', JSON.stringify({
       selectedUiFontMode,
       selectedUiFontValue,
       customUiFont,
@@ -272,7 +272,7 @@
 
   function loadFontSettings() {
     try {
-      const saved = localStorage.getItem('imbank_font_settings');
+      const saved = localStorage.getItem('imjson_font_settings') || localStorage.getItem('imbank_font_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.selectedUiFontMode) selectedUiFontMode = parsed.selectedUiFontMode;
@@ -444,7 +444,7 @@
           <div class="font-preview">
             <h4>폰트 적용 미리보기</h4>
             <div class="preview-box ui-preview">
-              <span>[UI 폰트 영역] iM뱅크JSON - 메뉴 &amp; 컨트롤</span>
+              <span>[UI 폰트 영역] iMJSON - 메뉴 &amp; 컨트롤</span>
             </div>
             <div class="preview-box code-preview">
               <span>[Code 폰트 영역] "status": "Active", "count": 100</span>
