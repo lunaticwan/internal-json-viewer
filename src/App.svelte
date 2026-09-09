@@ -109,13 +109,6 @@
 
   async function loadSystemFonts() {
     try {
-      if (window.electronAPI && typeof window.electronAPI.getSystemFonts === 'function') {
-        const fonts = await window.electronAPI.getSystemFonts();
-        if (Array.isArray(fonts) && fonts.length > 0) {
-          systemFonts = fonts;
-          return;
-        }
-      }
       if ('queryLocalFonts' in window) {
         const fontData = await window.queryLocalFonts();
         const fontNames = Array.from(new Set(fontData.map((f) => f.family))).sort((a, b) => a.localeCompare(b));
