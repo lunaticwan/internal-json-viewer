@@ -41,7 +41,7 @@
     json: [
       {
         "id": 1,
-        "name": "iM뱅크 JSON 에디터",
+        "name": "iM뱅크JSON",
         "category": "Developer Tool",
         "status": "Active",
         "version": "1.0.0",
@@ -71,6 +71,76 @@
 
   let mode = $state(Mode.tree);
   let fileInput = $state();
+
+  function triggerFileUpload() {
+    if (fileInput) fileInput.click();
+  }
+
+  function handleFileUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        try {
+          const parsed = JSON.parse(text);
+          content = { json: parsed };
+        } catch {
+          content = { text: text };
+        }
+      } catch (err) {
+        alert('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  function handleRenderMenu(items, context) {
+    // 1. i18n 기본 번역 적용
+    const translatedItems = onRenderMenu(items, context) || items;
+
+    // 2. 툴바 좌측 상단에 브랜딩 및 개별 기능 버튼 흡수
+    const customBrandLabel = {
+      type: 'button',
+      text: 'iM뱅크JSON',
+      className: 'jse-brand-label',
+      onClick: () => {}
+    };
+
+    const openFileButton = {
+      type: 'button',
+      text: '파일 열기',
+      title: 'JSON 파일 열기',
+      className: 'jse-custom-btn',
+      onClick: () => triggerFileUpload()
+    };
+
+    const fontSettingsButton = {
+      type: 'button',
+      text: '폰트 설정',
+      title: '폰트 설정',
+      className: 'jse-custom-btn',
+      onClick: () => {
+        showFontModal = true;
+      }
+    };
+
+    const separator = {
+      type: 'separator'
+    };
+
+    return [
+      customBrandLabel,
+      separator,
+      openFileButton,
+      fontSettingsButton,
+      separator,
+      ...translatedItems
+    ];
+  }
 
   function applyFonts() {
     let uiFontCSS = '';
@@ -154,74 +224,10 @@
   function handleContentChange(newContent) {
     content = newContent;
   }
-
-  function triggerFileUpload() {
-    fileInput.click();
-  }
-
-  function handleFileUpload(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const text = e.target.result;
-        try {
-          const parsed = JSON.parse(text);
-          content = { json: parsed };
-        } catch {
-          content = { text: text };
-        }
-      } catch (err) {
-        alert('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
-  }
 </script>
 
 <div class="container">
-  <header class="header">
-    <div class="button-group">
-      <label class="btn-label">
-        <span>모드:</span>
-        <select value={mode} onchange={(e) => handleModeChange(e.target.value)} class="select-mode">
-          <option value={Mode.tree}>Tree 모드</option>
-          <option value={Mode.table}>Table 모드</option>
-          <option value={Mode.text}>Code 모드</option>
-        </select>
-      </label>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="button-group">
-      <button onclick={triggerFileUpload} class="btn btn-primary" title="JSON 파일 열기">
-        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="17 8 12 3 7 8"></polyline>
-          <line x1="12" y1="3" x2="12" y2="15"></line>
-        </svg>
-        JSON 파일 열기
-      </button>
-      <input bind:this={fileInput} type="file" accept=".json,application/json,text/plain" onchange={handleFileUpload} style="display: none;" />
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="button-group">
-      <button onclick={() => (showFontModal = true)} class="btn btn-secondary" title="폰트 설정">
-        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-          <path d="M4 7V4h16v3"></path>
-          <path d="M9 20h6"></path>
-          <path d="M12 4v16"></path>
-        </svg>
-        폰트 설정
-      </button>
-    </div>
-  </header>
+  <input bind:this={fileInput} type="file" accept=".json,application/json,text/plain" onchange={handleFileUpload} style="display: none;" />
 
   {#if showFontModal}
     <div class="modal-backdrop" onclick={() => (showFontModal = false)} onkeydown={(e) => e.key === 'Escape' && (showFontModal = false)} role="presentation" tabindex="-1">
@@ -318,7 +324,7 @@
           <div class="font-preview">
             <h4>폰트 적용 미리보기</h4>
             <div class="preview-box ui-preview">
-              <span>[UI 폰트 영역] iM뱅크 JSON 에디터 - 메뉴 &amp; 컨트롤</span>
+              <span>[UI 폰트 영역] iM뱅크JSON - 메뉴 &amp; 컨트롤</span>
             </div>
             <div class="preview-box code-preview">
               <span>[Code 폰트 영역] "status": "Active", "count": 100</span>
@@ -337,7 +343,7 @@
     <JSONEditor
       {content}
       {mode}
-      {onRenderMenu}
+      onRenderMenu={handleRenderMenu}
       {onRenderContextMenu}
       onChange={handleContentChange}
       onChangeMode={handleModeChange}
@@ -354,65 +360,14 @@
     background-color: #f8fafc;
   }
 
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 1.25rem;
-    padding: 0.75rem 1.25rem;
-    background-color: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-    z-index: 10;
-  }
-
-  .button-group {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-  }
-
-  .divider {
-    height: 28px;
-    width: 1px;
-    background-color: #cbd5e1;
-  }
-
-  .btn-label {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #334155;
-  }
-
-  .select-mode {
-    padding: 0.6rem 1rem;
-    font-size: 1rem;
-    font-weight: 500;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    background-color: #ffffff;
-    color: #1e293b;
-    cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s ease-in-out;
-  }
-
-  .select-mode:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-  }
-
   .btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.6rem 1.1rem;
-    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid transparent;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
@@ -425,21 +380,6 @@
 
   .btn-primary:hover {
     background-color: #1d4ed8;
-  }
-
-  .btn-secondary {
-    background-color: #f1f5f9;
-    color: #334155;
-    border: 1px solid #cbd5e1;
-  }
-
-  .btn-secondary:hover {
-    background-color: #e2e8f0;
-    color: #0f172a;
-  }
-
-  .icon {
-    flex-shrink: 0;
   }
 
   /* Modal Style */
@@ -459,8 +399,8 @@
 
   .modal-content {
     background: #ffffff;
-    border-radius: 12px;
-    width: 520px;
+    border-radius: 10px;
+    width: 460px;
     max-width: 90vw;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     display: flex;
@@ -472,12 +412,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.25rem 1.5rem;
+    padding: 0.875rem 1.125rem;
     border-bottom: 1px solid #e2e8f0;
   }
 
   .modal-header h2 {
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #0f172a;
     margin: 0;
@@ -486,7 +426,7 @@
   .close-btn {
     background: transparent;
     border: none;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     line-height: 1;
     color: #64748b;
     cursor: pointer;
@@ -498,10 +438,10 @@
   }
 
   .modal-body {
-    padding: 1.5rem;
+    padding: 1.125rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.125rem;
     max-height: 70vh;
     overflow-y: auto;
   }
@@ -509,11 +449,11 @@
   .font-section {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.4rem;
   }
 
   .font-section h3 {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: #334155;
   }
@@ -521,25 +461,25 @@
   .mode-selector {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
-    font-size: 0.8125rem;
+    gap: 1rem;
+    font-size: 0.75rem;
     color: #475569;
   }
 
   .mode-selector label {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.25rem;
     cursor: pointer;
   }
 
   .font-select,
   .font-input {
     width: 100%;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8125rem;
     border: 1px solid #cbd5e1;
-    border-radius: 6px;
+    border-radius: 5px;
     background-color: #ffffff;
     color: #0f172a;
     outline: none;
@@ -553,25 +493,25 @@
   }
 
   .font-preview {
-    margin-top: 0.5rem;
-    padding-top: 1rem;
+    margin-top: 0.25rem;
+    padding-top: 0.75rem;
     border-top: 1px dashed #e2e8f0;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 
   .font-preview h4 {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #64748b;
   }
 
   .preview-box {
-    padding: 0.6rem 0.8rem;
-    border-radius: 6px;
+    padding: 0.45rem 0.65rem;
+    border-radius: 5px;
     border: 1px solid #e2e8f0;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
 
   .ui-preview {
@@ -587,7 +527,7 @@
   }
 
   .modal-footer {
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1.125rem;
     border-top: 1px solid #e2e8f0;
     background-color: #f8fafc;
     display: flex;
@@ -597,8 +537,32 @@
   .editor-container {
     flex: 1;
     width: 100%;
-    height: calc(100vh - 61px);
+    height: 100vh;
     overflow: hidden;
+  }
+
+  .editor-container :global(.jse-brand-label) {
+    width: auto !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+    padding: 0 0.75rem !important;
+    color: #ffffff !important;
+    user-select: none;
+    letter-spacing: -0.02em;
+    cursor: default !important;
+    background: transparent !important;
+  }
+
+  .editor-container :global(.jse-brand-label:hover) {
+    background: transparent !important;
+  }
+
+  .editor-container :global(.jse-custom-btn) {
+    width: auto !important;
+    padding: 0 0.6rem !important;
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap;
   }
 
   .editor-container :global(.jse-main) {
