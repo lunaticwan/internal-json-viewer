@@ -7,28 +7,12 @@
 :root {
   --app-font-ui: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   --app-font-code: 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+  --app-font-size: 15px;
   --jse-font-family: var(--app-font-ui);
   --jse-font-family-mono: var(--app-font-code);
-  --jse-font-size: 15px;
-  --jse-menu-font-size: 15px;
-  --jse-button-size: 38px;
-}
-
-/* svelte-jsoneditor 상단 메뉴바 및 버튼/아이콘 사이즈 조정 */
-.jse-menu {
-  min-height: 48px !important;
-  padding: 4px 8px !important;
-}
-
-.jse-menu button {
-  min-width: 38px !important;
-  height: 38px !important;
-  font-size: 15px !important;
-}
-
-.jse-menu button svg {
-  width: 20px !important;
-  height: 20px !important;
+  --jse-font-size: var(--app-font-size, 15px);
+  --jse-font-size-mono: var(--app-font-size, 15px);
+  --jse-menu-font-size: 14px;
 }
 
 html, body, #app {
@@ -45,20 +29,201 @@ body, button, input, select, textarea, .jse-main, .jse-menu, .jse-context-menu, 
   font-family: var(--app-font-ui);
 }
 
-/* 코드 및 데이터 편집 영역 폰트 적용 */
+/* 데이터/트리/테이블/코드 폰트 및 폰트 크기 동적 반응형 적용 */
 .jse-contents,
+.jse-tree-mode,
+.jse-table-mode,
 .jse-text-mode,
 .jse-code-mode,
 .cm-editor,
 .cm-content,
+.jse-node,
 .jse-key,
 .jse-value,
 .jse-value-string,
 .jse-value-number,
 .jse-value-boolean,
 .jse-value-null,
+.jse-table-mode table,
+.jse-table-mode th,
+.jse-table-mode td,
+.jse-table-mode input,
 code,
 pre,
 .jse-mono {
   font-family: var(--app-font-code) !important;
+  font-size: var(--app-font-size, 15px) !important;
+}
+
+/* ==========================================================================
+   현대적인 Dark Slate 툴바 (Modern Toolbar Redesign)
+   ========================================================================== */
+.jse-menu {
+  background: #0f172a !important; /* Modern Slate 900 */
+  border-bottom: 1px solid #1e293b !important;
+  min-height: 50px !important;
+  padding: 6px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 버튼 기본 스타일 현대화 */
+.jse-menu button,
+.jse-menu .jse-button {
+  min-width: 34px !important;
+  height: 34px !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease-in-out !important;
+  color: #cbd5e1 !important; /* Slate 300 */
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+.jse-menu button:hover:not(:disabled),
+.jse-menu .jse-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 브랜딩 타이틀 */
+.editor-container .jse-brand-label {
+  width: auto !important;
+  font-weight: 800 !important;
+  font-size: 0.95rem !important;
+  padding: 0 10px !important;
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  letter-spacing: -0.02em;
+  user-select: none;
+  cursor: default !important;
+}
+
+/* 커스텀 상단 버튼 (파일 열기, 폰트 설정) */
+.editor-container .jse-custom-btn {
+  width: auto !important;
+  padding: 0 10px !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f1f5f9 !important;
+  border-radius: 6px !important;
+}
+
+.editor-container .jse-custom-btn:hover {
+  background: rgba(56, 189, 248, 0.2) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  color: #ffffff !important;
+}
+
+/* 모드 전환 그룹 버튼 (Tree, Table, Code) */
+.jse-menu .jse-button.jse-group-button {
+  width: auto !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  margin: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.jse-menu .jse-button.jse-group-button.jse-first {
+  border-top-left-radius: 6px !important;
+  border-bottom-left-radius: 6px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.jse-menu .jse-button.jse-group-button.jse-last {
+  border-top-right-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.jse-menu .jse-button.jse-group-button.jse-selected {
+  background: #0284c7 !important; /* Cyan 600 */
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4) !important;
+}
+
+/* 구분선 개편 */
+.jse-menu .jse-separator {
+  background: rgba(255, 255, 255, 0.12) !important;
+  width: 1px !important;
+  height: 22px !important;
+  margin: 0 6px !important;
+}
+
+/* 폰트 크기 조절 컨트롤 그룹 */
+.jse-font-size-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 2px;
+  height: 34px;
+}
+
+.jse-font-size-btn {
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 0 8px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease-in-out;
+}
+
+.jse-font-size-btn:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+}
+
+.jse-font-size-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.jse-font-size-select {
+  background: #1e293b;
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 0 6px;
+  height: 28px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.jse-font-size-select:focus,
+.jse-font-size-select:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.jse-font-size-select option {
+  background: #0f172a;
+  color: #f8fafc;
 }
