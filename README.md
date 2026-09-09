@@ -42,6 +42,13 @@ npm run build
 npm run preview
 ```
 
+## GitHub Pages 배포
+
+이 프로젝트는 GitHub Actions를 통해 GitHub Pages로 자동 배포되도록 설정되어 있습니다.
+1. GitHub 저장소의 `Settings` > `Pages` 이동.
+2. **Source** 항목을 **GitHub Actions**로 설정.
+3. `main` 브랜치에 코드를 `push`하면 `.github/workflows/deploy.yml` 워크플로우가 자동으로 실행되어 배포 완료.
+
 ## 기술 스택
 
 - **Framework**: Svelte 5
