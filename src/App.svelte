@@ -184,50 +184,42 @@
 
 <div class="container">
   <header class="header">
-    <div class="brand">
-      <div class="logo-icon">&#123;&#125;</div>
-      <h1>iM뱅크 JSON 에디터</h1>
-      <span class="badge">iM뱅크 오프라인</span>
+    <div class="button-group">
+      <label class="btn-label">
+        <span>모드:</span>
+        <select value={mode} onchange={(e) => handleModeChange(e.target.value)} class="select-mode">
+          <option value={Mode.tree}>Tree 모드</option>
+          <option value={Mode.table}>Table 모드</option>
+          <option value={Mode.text}>Code 모드</option>
+        </select>
+      </label>
     </div>
 
-    <div class="toolbar">
-      <div class="button-group">
-        <label class="btn-label">
-          <span>모드:</span>
-          <select value={mode} onchange={(e) => handleModeChange(e.target.value)} class="select-mode">
-            <option value={Mode.tree}>Tree 모드</option>
-            <option value={Mode.table}>Table 모드</option>
-            <option value={Mode.text}>Code 모드</option>
-          </select>
-        </label>
-      </div>
+    <div class="divider"></div>
 
-      <div class="divider"></div>
+    <div class="button-group">
+      <button onclick={triggerFileUpload} class="btn btn-primary" title="JSON 파일 열기">
+        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        JSON 파일 열기
+      </button>
+      <input bind:this={fileInput} type="file" accept=".json,application/json,text/plain" onchange={handleFileUpload} style="display: none;" />
+    </div>
 
-      <div class="button-group">
-        <button onclick={triggerFileUpload} class="btn btn-primary" title="JSON 파일 열기">
-          <svg class="icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="17 8 12 3 7 8"></polyline>
-            <line x1="12" y1="3" x2="12" y2="15"></line>
-          </svg>
-          JSON 파일 열기
-        </button>
-        <input bind:this={fileInput} type="file" accept=".json,application/json,text/plain" onchange={handleFileUpload} style="display: none;" />
-      </div>
+    <div class="divider"></div>
 
-      <div class="divider"></div>
-
-      <div class="button-group">
-        <button onclick={() => (showFontModal = true)} class="btn btn-secondary" title="폰트 설정">
-          <svg class="icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-            <path d="M4 7V4h16v3"></path>
-            <path d="M9 20h6"></path>
-            <path d="M12 4v16"></path>
-          </svg>
-          폰트 설정
-        </button>
-      </div>
+    <div class="button-group">
+      <button onclick={() => (showFontModal = true)} class="btn btn-secondary" title="폰트 설정">
+        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+          <path d="M4 7V4h16v3"></path>
+          <path d="M9 20h6"></path>
+          <path d="M12 4v16"></path>
+        </svg>
+        폰트 설정
+      </button>
     </div>
   </header>
 
@@ -365,54 +357,13 @@
   .header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.5rem;
+    justify-content: flex-start;
+    gap: 1.25rem;
+    padding: 0.75rem 1.25rem;
     background-color: #ffffff;
     border-bottom: 1px solid #e2e8f0;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
     z-index: 10;
-  }
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-  }
-
-  .logo-icon {
-    width: 38px;
-    height: 38px;
-    background-color: #3b82f6;
-    color: white;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 1.25rem;
-    font-family: monospace;
-  }
-
-  .brand h1 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #0f172a;
-    letter-spacing: -0.025em;
-  }
-
-  .badge {
-    background-color: #e0f2fe;
-    color: #0369a1;
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-  }
-
-  .toolbar {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
   }
 
   .button-group {
