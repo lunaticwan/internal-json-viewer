@@ -3,8 +3,14 @@ name: Build Windows Electron App
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
+      - master
     tags:
       - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build-windows:
@@ -36,3 +42,30 @@ jobs:
           name: iM-Bank-JSON-Editor-Windows
           path: dist-electron/*.exe
           retention-days: 14
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref_name == 'main' || github.ref_name == 'master'
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'iM-Bank JSON Editor - Latest Build' }}
+          files: dist-electron/*.exe
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          generate_release_notes: true
+
+      - name: Generate Build Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### 📦 Windows Executable (.exe) 빌드 완료" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 🚀 다운로드 방법" >> $GITHUB_STEP_SUMMARY
+          echo "1. **GitHub Releases**: [최신 Release 다운로드 페이지 이동](${{ github.server_url }}/${{ github.repository }}/releases)" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Workflow Artifacts**: 현재 워크플로우 실행 페이지 하단의 **Artifacts** 영역에서 \`iM-Bank-JSON-Editor-Windows\` 다운로드" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 📄 생성된 실행 파일 목록" >> $GITHUB_STEP_SUMMARY
+          for file in dist-electron/*.exe; do
+            if [ -f "$file" ]; then
+              echo "- \`$(basename "$file")\`" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
