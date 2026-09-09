@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
-        name: 'iM뱅크 JSON 에디터',
+        name: 'iMJSON 에디터',
         short_name: 'JSON 에디터',
-        description: 'iM뱅크 사내 내부망 전용 JSON 에디터',
+        description: 'iMJSON 사내 내부망 전용 JSON 에디터',
         theme_color: '#2563eb',
         background_color: '#f8fafc',
         display: 'standalone',

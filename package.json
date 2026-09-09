@@ -1,6 +1,6 @@
 {
-  "name": "imbank-json-editor",
-  "productName": "iM뱅크 JSON 에디터",
+  "name": "imjson-editor",
+  "productName": "iMJSON 에디터",
   "private": true,
   "version": "1.0.0",
   "type": "module",
