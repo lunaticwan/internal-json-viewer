@@ -24,6 +24,9 @@
     { label: 'Courier New', value: "'Courier New', monospace" }
   ];
 
+  // 폰트 크기 선택 리스트 (px)
+  const fontSizes = [11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 28];
+
   let systemFonts = $state([]);
 
   // 상태 관리
@@ -34,6 +37,9 @@
   let selectedCodeFontMode = $state('preset'); // 'preset', 'system', 'custom'
   let selectedCodeFontValue = $state(presetCodeFonts[0].value);
   let customCodeFont = $state('');
+
+  let fontSize = $state(15);
+  let fontSizeGroupEl = $state();
 
   let showFontModal = $state(false);
 
@@ -98,6 +104,66 @@
     event.target.value = '';
   }
 
+  function applyFontSize() {
+    document.documentElement.style.setProperty('--app-font-size', `${fontSize}px`);
+    document.documentElement.style.setProperty('--jse-font-size', `${fontSize}px`);
+    document.documentElement.style.setProperty('--jse-font-size-mono', `${fontSize}px`);
+    try {
+      localStorage.setItem('imbank_font_size', String(fontSize));
+    } catch (err) {
+      console.error('Failed to save font size:', err);
+    }
+  }
+
+  function loadFontSize() {
+    try {
+      const saved = localStorage.getItem('imbank_font_size');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && fontSizes.includes(parsed)) {
+          fontSize = parsed;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load font size:', err);
+    }
+  }
+
+  function decreaseFontSize() {
+    const currentIndex = fontSizes.indexOf(fontSize);
+    if (currentIndex > 0) {
+      fontSize = fontSizes[currentIndex - 1];
+      applyFontSize();
+    }
+  }
+
+  function increaseFontSize() {
+    const currentIndex = fontSizes.indexOf(fontSize);
+    if (currentIndex < fontSizes.length - 1) {
+      fontSize = fontSizes[currentIndex + 1];
+      applyFontSize();
+    }
+  }
+
+  function handleFontSizeSelect(e) {
+    const val = parseInt(e.target.value, 10);
+    if (!isNaN(val)) {
+      fontSize = val;
+      applyFontSize();
+    }
+  }
+
+  function attachFontSizeControl() {
+    if (!fontSizeGroupEl) return;
+    const placeholder = document.querySelector('.jse-font-size-slot-placeholder');
+    if (placeholder && placeholder.parentNode) {
+      if (placeholder.parentNode !== fontSizeGroupEl.parentNode || fontSizeGroupEl.nextSibling !== placeholder) {
+        placeholder.parentNode.insertBefore(fontSizeGroupEl, placeholder);
+        placeholder.style.display = 'none';
+      }
+    }
+  }
+
   function handleRenderMenu(items, context) {
     // 1. i18n 기본 번역 적용
     const translatedItems = onRenderMenu(items, context) || items;
@@ -128,15 +194,28 @@
       }
     };
 
+    const fontControlSlotPlaceholder = {
+      type: 'button',
+      text: '',
+      className: 'jse-font-size-slot-placeholder',
+      onClick: () => {}
+    };
+
     const separator = {
       type: 'separator'
     };
+
+    setTimeout(() => {
+      attachFontSizeControl();
+    }, 0);
 
     return [
       customBrandLabel,
       separator,
       openFileButton,
       fontSettingsButton,
+      separator,
+      fontControlSlotPlaceholder,
       separator,
       ...translatedItems
     ];
@@ -210,8 +289,14 @@
 
   onMount(() => {
     loadFontSettings();
+    loadFontSize();
     loadSystemFonts();
     applyFonts();
+    applyFontSize();
+
+    setTimeout(() => {
+      attachFontSizeControl();
+    }, 50);
 
     const cleanup = setupI18nObserver();
     return cleanup;
@@ -219,6 +304,9 @@
 
   function handleModeChange(newMode) {
     mode = newMode;
+    setTimeout(() => {
+      attachFontSizeControl();
+    }, 50);
   }
 
   function handleContentChange(newContent) {
@@ -228,6 +316,38 @@
 
 <div class="container">
   <input bind:this={fileInput} type="file" accept=".json,application/json,text/plain" onchange={handleFileUpload} style="display: none;" />
+
+  <!-- 툴바 삽입용 폰트 크기 컨트롤 그룹 -->
+  <div bind:this={fontSizeGroupEl} class="jse-font-size-group">
+    <button
+      type="button"
+      class="jse-font-size-btn"
+      onclick={decreaseFontSize}
+      disabled={fontSize <= fontSizes[0]}
+      title="폰트 크기 작게 (A-)"
+    >
+      A-
+    </button>
+    <select
+      class="jse-font-size-select"
+      value={fontSize}
+      onchange={handleFontSizeSelect}
+      title="폰트 크기 선택"
+    >
+      {#each fontSizes as size}
+        <option value={size}>{size}px</option>
+      {/each}
+    </select>
+    <button
+      type="button"
+      class="jse-font-size-btn"
+      onclick={increaseFontSize}
+      disabled={fontSize >= fontSizes[fontSizes.length - 1]}
+      title="폰트 크기 크게 (A+)"
+    >
+      A+
+    </button>
+  </div>
 
   {#if showFontModal}
     <div class="modal-backdrop" onclick={() => (showFontModal = false)} onkeydown={(e) => e.key === 'Escape' && (showFontModal = false)} role="presentation" tabindex="-1">
@@ -539,30 +659,6 @@
     width: 100%;
     height: 100vh;
     overflow: hidden;
-  }
-
-  .editor-container :global(.jse-brand-label) {
-    width: auto !important;
-    font-weight: 800 !important;
-    font-size: 1rem !important;
-    padding: 0 0.75rem !important;
-    color: #ffffff !important;
-    user-select: none;
-    letter-spacing: -0.02em;
-    cursor: default !important;
-    background: transparent !important;
-  }
-
-  .editor-container :global(.jse-brand-label:hover) {
-    background: transparent !important;
-  }
-
-  .editor-container :global(.jse-custom-btn) {
-    width: auto !important;
-    padding: 0 0.6rem !important;
-    font-size: 0.8125rem !important;
-    font-weight: 600 !important;
-    white-space: nowrap;
   }
 
   .editor-container :global(.jse-main) {

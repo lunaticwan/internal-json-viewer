@@ -1,0 +1,15 @@
+
+> imbank-json-editor@1.0.0 dev
+> vite
+
+8:54:41 AM [vite-plugin-svelte] no Svelte config found at /app - using default configuration.
+8:54:42 AM [vite] (client) Forced re-optimization of dependencies
+8:54:43 AM [vite] (ssr) [optimizer] bundling dependencies...
+8:54:43 AM [vite] (client) [optimizer] bundling dependencies...
+
+  VITE v8.2.2  ready in 2033 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+8:56:53 AM [vite] (client) hmr update /src/App.svelte, /src/App.svelte?svelte&type=style&lang.css
+8:57:04 AM [vite] (client) hmr update /src/app.css
