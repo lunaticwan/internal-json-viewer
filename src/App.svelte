@@ -24,8 +24,14 @@
     { label: 'Courier New', value: "'Courier New', monospace" }
   ];
 
-  // 폰트 크기 선택 리스트 (px)
+  // 폰트 크기 및 행높이 선택 리스트 (px)
   const fontSizes = [11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 28];
+  const rowHeights = [
+    { label: '좁게 (18px)', value: '18px' },
+    { label: '기본 (24px)', value: '24px' },
+    { label: '넓게 (30px)', value: '30px' },
+    { label: '매우 넓게 (36px)', value: '36px' }
+  ];
 
   let systemFonts = $state([]);
 
@@ -39,7 +45,9 @@
   let customCodeFont = $state('');
 
   let fontSize = $state(15);
-  let fontSizeGroupEl = $state();
+  let rowHeight = $state('24px');
+  let theme = $state('light'); // 'light' or 'dark'
+  let toolbarControlsEl = $state();
 
   let showFontModal = $state(false);
 
@@ -115,6 +123,46 @@
     }
   }
 
+  function applyRowHeight() {
+    document.documentElement.style.setProperty('--app-row-height', rowHeight);
+    try {
+      localStorage.setItem('imjson_row_height', rowHeight);
+    } catch (err) {
+      console.error('Failed to save row height:', err);
+    }
+  }
+
+  function applyTheme() {
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.classList.add('jse-theme-dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.classList.remove('jse-theme-dark');
+    }
+    try {
+      localStorage.setItem('imjson_theme', theme);
+    } catch (err) {
+      console.error('Failed to save theme:', err);
+    }
+  }
+
+  function toggleTheme() {
+    theme = theme === 'light' ? 'dark' : 'light';
+    applyTheme();
+  }
+
+  function loadTheme() {
+    try {
+      const saved = localStorage.getItem('imjson_theme');
+      if (saved === 'dark' || saved === 'light') {
+        theme = saved;
+      }
+    } catch (err) {
+      console.error('Failed to load theme:', err);
+    }
+  }
+
   function loadFontSize() {
     try {
       const saved = localStorage.getItem('imjson_font_size') || localStorage.getItem('imbank_font_size');
@@ -126,6 +174,17 @@
       }
     } catch (err) {
       console.error('Failed to load font size:', err);
+    }
+  }
+
+  function loadRowHeight() {
+    try {
+      const saved = localStorage.getItem('imjson_row_height');
+      if (saved && rowHeights.some(r => r.value === saved)) {
+        rowHeight = saved;
+      }
+    } catch (err) {
+      console.error('Failed to load row height:', err);
     }
   }
 
@@ -153,12 +212,17 @@
     }
   }
 
+  function handleRowHeightSelect(e) {
+    rowHeight = e.target.value;
+    applyRowHeight();
+  }
+
   function attachFontSizeControl() {
-    if (!fontSizeGroupEl) return;
+    if (!toolbarControlsEl) return;
     const placeholder = document.querySelector('.jse-font-size-slot-placeholder');
     if (placeholder && placeholder.parentNode) {
-      if (placeholder.parentNode !== fontSizeGroupEl.parentNode || fontSizeGroupEl.nextSibling !== placeholder) {
-        placeholder.parentNode.insertBefore(fontSizeGroupEl, placeholder);
+      if (placeholder.parentNode !== toolbarControlsEl.parentNode || toolbarControlsEl.nextSibling !== placeholder) {
+        placeholder.parentNode.insertBefore(toolbarControlsEl, placeholder);
         placeholder.style.display = 'none';
       }
     }
@@ -290,9 +354,13 @@
   onMount(() => {
     loadFontSettings();
     loadFontSize();
+    loadRowHeight();
+    loadTheme();
     loadSystemFonts();
     applyFonts();
     applyFontSize();
+    applyRowHeight();
+    applyTheme();
 
     setTimeout(() => {
       attachFontSizeControl();
@@ -317,36 +385,64 @@
 <div class="container">
   <input bind:this={fileInput} type="file" accept=".json,application/json,text/plain" onchange={handleFileUpload} style="display: none;" />
 
-  <!-- 툴바 삽입용 폰트 크기 컨트롤 그룹 -->
-  <div bind:this={fontSizeGroupEl} class="jse-font-size-group">
-    <button
-      type="button"
-      class="jse-font-size-btn"
-      onclick={decreaseFontSize}
-      disabled={fontSize <= fontSizes[0]}
-      title="폰트 크기 작게 (A-)"
-    >
-      A-
-    </button>
-    <select
-      class="jse-font-size-select"
-      value={fontSize}
-      onchange={handleFontSizeSelect}
-      title="폰트 크기 선택"
-    >
-      {#each fontSizes as size}
-        <option value={size}>{size}px</option>
-      {/each}
-    </select>
-    <button
-      type="button"
-      class="jse-font-size-btn"
-      onclick={increaseFontSize}
-      disabled={fontSize >= fontSizes[fontSizes.length - 1]}
-      title="폰트 크기 크게 (A+)"
-    >
-      A+
-    </button>
+  <!-- 툴바 삽입용 커스텀 컨트롤 그룹 -->
+  <div bind:this={toolbarControlsEl} class="jse-toolbar-controls">
+    <div class="jse-font-size-group">
+      <span class="jse-control-label">글자 크기</span>
+      <button
+        type="button"
+        class="jse-font-size-btn"
+        onclick={decreaseFontSize}
+        disabled={fontSize <= fontSizes[0]}
+        title="폰트 크기 작게 (A-)"
+      >
+        A-
+      </button>
+      <select
+        class="jse-font-size-select"
+        value={fontSize}
+        onchange={handleFontSizeSelect}
+        title="폰트 크기 선택"
+      >
+        {#each fontSizes as size}
+          <option value={size}>{size}px</option>
+        {/each}
+      </select>
+      <button
+        type="button"
+        class="jse-font-size-btn"
+        onclick={increaseFontSize}
+        disabled={fontSize >= fontSizes[fontSizes.length - 1]}
+        title="폰트 크기 크게 (A+)"
+      >
+        A+
+      </button>
+    </div>
+
+    <div class="jse-row-height-group">
+      <span class="jse-control-label">행 높이</span>
+      <select
+        class="jse-font-size-select"
+        value={rowHeight}
+        onchange={handleRowHeightSelect}
+        title="행 높이 선택"
+      >
+        {#each rowHeights as rh}
+          <option value={rh.value}>{rh.label}</option>
+        {/each}
+      </select>
+    </div>
+
+    <div class="jse-theme-group">
+      <button
+        type="button"
+        class="jse-theme-toggle-btn"
+        onclick={toggleTheme}
+        title={theme === 'light' ? '다크 테마로 변경' : '라이트 테마로 변경'}
+      >
+        {theme === 'light' ? '🌙 다크' : '☀️ 라이트'}
+      </button>
+    </div>
   </div>
 
   {#if showFontModal}
@@ -463,6 +559,7 @@
     <JSONEditor
       {content}
       {mode}
+      className={theme === 'dark' ? 'jse-theme-dark' : ''}
       onRenderMenu={handleRenderMenu}
       {onRenderContextMenu}
       onChange={handleContentChange}

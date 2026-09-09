@@ -8,6 +8,7 @@
   --app-font-ui: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   --app-font-code: 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
   --app-font-size: 15px;
+  --app-row-height: 24px;
   --jse-font-family: var(--app-font-ui);
   --jse-font-family-mono: var(--app-font-code);
   --jse-font-size: var(--app-font-size, 15px);
@@ -53,6 +54,14 @@ pre,
 .jse-mono {
   font-family: var(--app-font-code) !important;
   font-size: var(--app-font-size, 15px) !important;
+}
+
+/* 행높이 반영 */
+.jse-tree-mode .jse-node,
+.jse-table-mode th,
+.jse-table-mode td,
+.cm-line {
+  line-height: var(--app-row-height, 24px) !important;
 }
 
 /* ==========================================================================
@@ -164,16 +173,52 @@ pre,
   margin: 0 6px !important;
 }
 
-/* 폰트 크기 조절 컨트롤 그룹 */
-.jse-font-size-group {
+/* 툴바 커스텀 컨트롤 그룹 (폰트 크기, 행높이, 테마 토글) */
+.jse-toolbar-controls {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
+}
+
+.jse-font-size-group,
+.jse-row-height-group,
+.jse-theme-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
-  padding: 2px;
+  padding: 2px 6px;
   height: 34px;
+}
+
+.jse-theme-toggle-btn {
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 6px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease-in-out;
+}
+
+.jse-theme-toggle-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+}
+
+.jse-control-label {
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .jse-font-size-btn {
@@ -226,4 +271,77 @@ pre,
 .jse-font-size-select option {
   background: #0f172a;
   color: #f8fafc;
+}
+
+/* ==========================================================================
+   Table Mode 그리드 & 셀 가독성 강화 스타일 (테마 연동)
+   ========================================================================== */
+:root {
+  --grid-border-color: #cbd5e1;
+  --grid-header-bg: #f1f5f9;
+  --grid-header-color: #0f172a;
+  --grid-row-even-bg: #f8fafc;
+  --grid-row-hover-bg: #e2e8f0;
+}
+
+[data-theme="dark"] {
+  --grid-border-color: #334155;
+  --grid-header-bg: #1e293b;
+  --grid-header-color: #f8fafc;
+  --grid-row-even-bg: #0f172a;
+  --grid-row-hover-bg: #1e293b;
+}
+
+.jse-table-mode .jse-table-main,
+.jse-main.jse-theme-dark .jse-table-mode .jse-table-main {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+  border: 1px solid var(--grid-border-color) !important;
+}
+
+.jse-table-mode th,
+.jse-table-mode td,
+.jse-table-mode .jse-table-cell {
+  border-right: 1px solid var(--grid-border-color) !important;
+  border-bottom: 1px solid var(--grid-border-color) !important;
+  padding: 4px 8px !important;
+}
+
+.jse-table-mode th,
+.jse-table-mode .jse-table-cell-header {
+  background-color: var(--grid-header-bg) !important;
+  color: var(--grid-header-color) !important;
+  font-weight: 700 !important;
+}
+
+.jse-table-mode tr:nth-child(even) td {
+  background-color: var(--grid-row-even-bg);
+}
+
+.jse-table-mode tr:hover td {
+  background-color: var(--grid-row-hover-bg) !important;
+}
+
+/* 다크 테마 셀 내부 박스 및 텍스트 대비 조절 */
+.jse-main.jse-theme-dark .jse-table-mode td,
+.jse-main.jse-theme-dark .jse-table-mode input,
+.jse-main.jse-theme-dark .jse-table-mode .jse-value-string,
+.jse-main.jse-theme-dark .jse-table-mode .jse-value-number,
+.jse-main.jse-theme-dark .jse-table-mode .jse-value-boolean,
+.jse-main.jse-theme-dark .jse-table-mode .jse-value-null,
+.jse-main.jse-theme-dark .jse-table-mode .jse-value-unquoted,
+.jse-main.jse-theme-dark .jse-table-mode .jse-value,
+.jse-main.jse-theme-dark .jse-table-mode .jse-contents-cell,
+.jse-main.jse-theme-dark .jse-table-mode .jse-table-cell {
+  background-color: transparent !important;
+}
+
+.jse-main.jse-theme-dark .jse-table-mode .jse-value-string,
+.jse-main.jse-theme-dark .jse-table-mode .jse-value-unquoted {
+  color: #a5f3fc !important;
+}
+
+.jse-main.jse-theme-dark .jse-table-mode .jse-value-number {
+  color: #fde047 !important;
 }

@@ -395,15 +395,24 @@ export function setupI18nObserver() {
   translateDOM();
 
   // Observer for dynamic element updates
-  const observer = new MutationObserver(() => {
+  let observer;
+  const safeTranslate = () => {
+    if (observer) observer.disconnect();
     translateDOM();
+    if (observer) {
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+    }
+  };
+
+  observer = new MutationObserver(() => {
+    safeTranslate();
   });
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    characterData: true
-  });
+  safeTranslate();
 
   return () => observer.disconnect();
 }
