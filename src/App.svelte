@@ -193,7 +193,7 @@
     <div class="toolbar">
       <div class="button-group">
         <label class="btn-label">
-          <span>Mode:</span>
+          <span>모드:</span>
           <select value={mode} onchange={(e) => handleModeChange(e.target.value)} class="select-mode">
             <option value={Mode.tree}>Tree 모드</option>
             <option value={Mode.table}>Table 모드</option>
@@ -206,7 +206,7 @@
 
       <div class="button-group">
         <button onclick={triggerFileUpload} class="btn btn-primary" title="JSON 파일 열기">
-          <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+          <svg class="icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="17 8 12 3 7 8"></polyline>
             <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -220,7 +220,7 @@
 
       <div class="button-group">
         <button onclick={() => (showFontModal = true)} class="btn btn-secondary" title="폰트 설정">
-          <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+          <svg class="icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M4 7V4h16v3"></path>
             <path d="M9 20h6"></path>
             <path d="M12 4v16"></path>
@@ -366,7 +366,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1.25rem;
+    padding: 1rem 1.5rem;
     background-color: #ffffff;
     border-bottom: 1px solid #e2e8f0;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
@@ -376,12 +376,12 @@
   .brand {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.85rem;
   }
 
   .logo-icon {
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
     background-color: #3b82f6;
     color: white;
     border-radius: 8px;
@@ -389,12 +389,12 @@
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     font-family: monospace;
   }
 
   .brand h1 {
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: #0f172a;
     letter-spacing: -0.025em;
@@ -403,44 +403,45 @@
   .badge {
     background-color: #e0f2fe;
     color: #0369a1;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    padding: 0.2rem 0.6rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 9999px;
   }
 
   .toolbar {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem;
   }
 
   .button-group {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
   }
 
   .divider {
-    height: 24px;
+    height: 28px;
     width: 1px;
-    background-color: #e2e8f0;
+    background-color: #cbd5e1;
   }
 
   .btn-label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #475569;
+    gap: 0.6rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #334155;
   }
 
   .select-mode {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.875rem;
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    font-weight: 500;
     border: 1px solid #cbd5e1;
-    border-radius: 6px;
+    border-radius: 8px;
     background-color: #ffffff;
     color: #1e293b;
     cursor: pointer;
@@ -456,11 +457,11 @@
   .btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.45rem 0.85rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: 6px;
+    gap: 0.5rem;
+    padding: 0.6rem 1.1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
     border: 1px solid transparent;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
