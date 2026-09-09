@@ -46,7 +46,7 @@
         "status": "Active",
         "version": "1.0.0",
         "offlineSupport": true,
-        "description": "iM뱅크 사내 오프라인 및 웹 지원 JSON 에디터"
+        "description": "iM뱅크 사내 내부망 JSON 에디터"
       },
       {
         "id": 2,
