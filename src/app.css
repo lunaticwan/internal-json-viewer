@@ -23,6 +23,9 @@ html, body, #app {
   font-family: var(--app-font-ui);
   background-color: #f8fafc;
   color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* 전역 UI 및 에디터 UI 영역 폰트 적용 */
@@ -105,7 +108,7 @@ pre,
 :root:not([data-theme="dark"]) .editor-container .jse-custom-btn {
   width: auto !important;
   padding: 0 10px !important;
-  font-size: 0.8125rem !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   white-space: nowrap;
   background: #ffffff !important;
@@ -229,7 +232,7 @@ pre,
 [data-theme="dark"] .editor-container .jse-custom-btn {
   width: auto !important;
   padding: 0 10px !important;
-  font-size: 0.8125rem !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   white-space: nowrap;
   background: rgba(255, 255, 255, 0.06) !important;
@@ -334,12 +337,12 @@ pre,
 [data-theme="dark"] .jse-menu .jse-brand-label {
   width: auto !important;
   font-weight: 800 !important;
-  font-size: 1.05rem !important;
+  font-size: 17px !important;
   padding: 0 10px !important;
   background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
-  letter-spacing: -0.02em !important;
+  letter-spacing: 0 !important;
   user-select: none !important;
   cursor: default !important;
   border: none !important;

@@ -1471,9 +1471,9 @@
   .btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
     font-weight: 600;
     border-radius: 6px;
     border: 1px solid transparent;
@@ -1599,12 +1599,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.875rem 1.125rem;
+    padding: 14px 18px;
     border-bottom: 1px solid #e2e8f0;
   }
 
   .modal-header h2 {
-    font-size: 1rem;
+    font-size: 16px;
     font-weight: 600;
     color: #0f172a;
     margin: 0;
@@ -1613,11 +1613,11 @@
   .close-btn {
     background: transparent;
     border: none;
-    font-size: 1.25rem;
+    font-size: 20px;
     line-height: 1;
     color: #64748b;
     cursor: pointer;
-    padding: 0 0.25rem;
+    padding: 0 4px;
   }
 
   .close-btn:hover {
@@ -1625,10 +1625,10 @@
   }
 
   .modal-body {
-    padding: 1.125rem;
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 1.125rem;
+    gap: 18px;
     max-height: 70vh;
     overflow-y: auto;
   }
@@ -1636,11 +1636,11 @@
   .font-section {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 6px;
   }
 
   .font-section h3 {
-    font-size: 0.8125rem;
+    font-size: 13px;
     font-weight: 600;
     color: #334155;
   }
@@ -1648,23 +1648,23 @@
   .mode-selector {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    font-size: 0.75rem;
+    gap: 16px;
+    font-size: 12px;
     color: #475569;
   }
 
   .mode-selector label {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 4px;
     cursor: pointer;
   }
 
   .font-select,
   .font-input {
     width: 100%;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.8125rem;
+    padding: 6px 10px;
+    font-size: 13px;
     border: 1px solid #cbd5e1;
     border-radius: 5px;
     background-color: #ffffff;
@@ -1680,25 +1680,25 @@
   }
 
   .font-preview {
-    margin-top: 0.25rem;
-    padding-top: 0.75rem;
+    margin-top: 4px;
+    padding-top: 12px;
     border-top: 1px dashed #e2e8f0;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 6px;
   }
 
   .font-preview h4 {
-    font-size: 0.75rem;
+    font-size: 12px;
     font-weight: 600;
     color: #64748b;
   }
 
   .preview-box {
-    padding: 0.45rem 0.65rem;
+    padding: 7px 10px;
     border-radius: 5px;
     border: 1px solid #e2e8f0;
-    font-size: 0.8125rem;
+    font-size: 13px;
   }
 
   .ui-preview {
@@ -1714,7 +1714,7 @@
   }
 
   .modal-footer {
-    padding: 0.75rem 1.125rem;
+    padding: 12px 18px;
     border-top: 1px solid #e2e8f0;
     background-color: #f8fafc;
     display: flex;
