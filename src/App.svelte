@@ -51,40 +51,115 @@
 
   let showFontModal = $state(false);
 
-  let content = $state({
-    json: [
-      {
-        "id": 1,
-        "name": "iMJSON",
-        "category": "Developer Tool",
-        "status": "Active",
-        "version": "1.0.0",
-        "offlineSupport": true,
-        "description": "iMJSON 사내 내부망 JSON 에디터"
-      },
-      {
-        "id": 2,
-        "name": "Tree Mode Visualizer",
-        "category": "Feature",
-        "status": "Active",
-        "version": "1.2.0",
-        "offlineSupport": true,
-        "description": "JSON 구조를 계층적 트리 형태로 시각화 및 편집"
-      },
-      {
-        "id": 3,
-        "name": "Table Grid Viewer",
-        "category": "Feature",
-        "status": "Active",
-        "version": "1.1.0",
-        "offlineSupport": true,
-        "description": "객체 배열 데이터를 표(Table) 형태로 조회 및 수정"
-      }
-    ]
-  });
+  // 원본 데이터 저장소
+  let initialRawData = [
+    {
+      "id": 1,
+      "name": "iMJSON",
+      "category": "Developer Tool",
+      "status": "Active",
+      "version": "1.0.0",
+      "offlineSupport": true,
+      "description": "iMJSON 사내 내부망 JSON 에디터"
+    },
+    {
+      "id": 2,
+      "name": "Tree Mode Visualizer",
+      "category": "Feature",
+      "status": "Active",
+      "version": "1.2.0",
+      "offlineSupport": true,
+      "description": "JSON 구조를 계층적 트리 형태로 시각화 및 편집"
+    },
+    {
+      "id": 3,
+      "name": "Table Grid Viewer",
+      "category": "Feature",
+      "status": "Active",
+      "version": "1.1.0",
+      "offlineSupport": true,
+      "description": "객체 배열 데이터를 표(Table) 형태로 조회 및 수정"
+    }
+  ];
+
+  let rawData = $state(initialRawData);
+
+  // 다중 정렬 규칙: [{ key: 'category', dir: 'asc' }, { key: 'name', dir: 'desc' }]
+  let sortRules = $state([]);
+  // 필터 규칙: { category: Set(['Developer Tool']), ... }
+  let filterRules = $state({});
+
+  // 팝업 오픈 상태
+  let activeMenuCol = $state(null); // 연 열(Column) 이름
+  let menuPos = $state({ top: 0, left: 0 });
+  let filterSearchQuery = $state('');
+  let tempSelectedValues = $state(new Set());
+
+  // 계산된 JSON 에디터 전달용 content
+  let content = $state({ json: initialRawData });
 
   let mode = $state(Mode.tree);
   let fileInput = $state();
+
+  // 현재 활성화된 테이블 셀 인덱스 레퍼런스 (행, 열)
+  let currentActiveCellIndex = $state({ row: 0, col: 0 });
+
+  // 데이터 정렬 & 필터링 계산 함수
+  function getProcessedData(source, sorts, filters) {
+    if (!Array.isArray(source)) return source;
+
+    let result = [...source];
+
+    // 1. 필터링 적용
+    if (filters && Object.keys(filters).length > 0) {
+      result = result.filter(row => {
+        if (!row || typeof row !== 'object') return true;
+        for (const [key, allowedSet] of Object.entries(filters)) {
+          if (!allowedSet || allowedSet.size === 0) continue;
+          const valStr = String(row[key] ?? '');
+          if (!allowedSet.has(valStr)) return false;
+        }
+        return true;
+      });
+    }
+
+    // 2. 다중 정렬 적용
+    if (sorts && sorts.length > 0) {
+      result.sort((a, b) => {
+        for (const rule of sorts) {
+          const valA = a?.[rule.key];
+          const valB = b?.[rule.key];
+          if (valA === valB) continue;
+          if (valA === undefined || valA === null) return 1;
+          if (valB === undefined || valB === null) return -1;
+
+          let cmp = 0;
+          if (typeof valA === 'number' && typeof valB === 'number') {
+            cmp = valA - valB;
+          } else if (typeof valA === 'boolean' && typeof valB === 'boolean') {
+            cmp = valA === valB ? 0 : valA ? 1 : -1;
+          } else {
+            cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+          }
+
+          if (cmp !== 0) {
+            return rule.dir === 'asc' ? cmp : -cmp;
+          }
+        }
+        return 0;
+      });
+    }
+
+    return result;
+  }
+
+  // 데이터 변경 시 content 업데이트
+  function updateProcessedContent() {
+    if (Array.isArray(rawData)) {
+      const processed = getProcessedData(rawData, sortRules, filterRules);
+      content = { json: processed };
+    }
+  }
 
   function triggerFileUpload() {
     if (fileInput) fileInput.click();
@@ -100,6 +175,13 @@
         const text = e.target.result;
         try {
           const parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) {
+            rawData = parsed;
+          } else {
+            rawData = parsed;
+          }
+          sortRules = [];
+          filterRules = {};
           content = { json: parsed };
         } catch {
           content = { text: text };
@@ -229,10 +311,8 @@
   }
 
   function handleRenderMenu(items, context) {
-    // 1. i18n 기본 번역 적용
     const translatedItems = onRenderMenu(items, context) || items;
 
-    // 2. 툴바 좌측 상단에 브랜딩 및 개별 기능 버튼 흡수
     const customBrandLabel = {
       type: 'button',
       text: 'iMJSON',
@@ -309,7 +389,6 @@
     document.documentElement.style.setProperty('--app-font-ui', uiFontCSS);
     document.documentElement.style.setProperty('--app-font-code', codeFontCSS);
 
-    // Save settings
     localStorage.setItem('imjson_font_settings', JSON.stringify({
       selectedUiFontMode,
       selectedUiFontValue,
@@ -351,6 +430,302 @@
     }
   }
 
+  // --- 헤더 버튼 및 필터/다중정렬 바인딩 관찰자 ---
+  function getUniqueValuesForColumn(colKey) {
+    if (!Array.isArray(rawData)) return [];
+    const values = new Set();
+    for (const row of rawData) {
+      if (row && typeof row === 'object' && colKey in row) {
+        values.add(String(row[colKey] ?? ''));
+      }
+    }
+    return Array.from(values).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+  }
+
+  function openHeaderMenu(colKey, targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    activeMenuCol = colKey;
+    menuPos = {
+      top: rect.bottom + window.scrollY + 2,
+      left: Math.max(10, Math.min(rect.left + window.scrollX, window.innerWidth - 280))
+    };
+    filterSearchQuery = '';
+
+    const allVals = getUniqueValuesForColumn(colKey);
+    if (filterRules[colKey]) {
+      tempSelectedValues = new Set(filterRules[colKey]);
+    } else {
+      tempSelectedValues = new Set(allVals);
+    }
+  }
+
+  function closeHeaderMenu() {
+    activeMenuCol = null;
+  }
+
+  // 정렬 핸들러
+  function handleSingleSort(colKey, dir) {
+    sortRules = [{ key: colKey, dir }];
+    updateProcessedContent();
+    closeHeaderMenu();
+  }
+
+  function handleAddMultiSort(colKey, dir) {
+    const existingIdx = sortRules.findIndex(r => r.key === colKey);
+    if (existingIdx >= 0) {
+      sortRules[existingIdx].dir = dir;
+    } else {
+      sortRules = [...sortRules, { key: colKey, dir }];
+    }
+    updateProcessedContent();
+    closeHeaderMenu();
+  }
+
+  function handleClearSort(colKey) {
+    sortRules = sortRules.filter(r => r.key !== colKey);
+    updateProcessedContent();
+    closeHeaderMenu();
+  }
+
+  function handleClearAllSortAndFilter() {
+    sortRules = [];
+    filterRules = {};
+    updateProcessedContent();
+    closeHeaderMenu();
+  }
+
+  // 필터 핸들러
+  function toggleSelectAllValues(colKey) {
+    const allVals = getUniqueValuesForColumn(colKey);
+    if (tempSelectedValues.size === allVals.length) {
+      tempSelectedValues = new Set();
+    } else {
+      tempSelectedValues = new Set(allVals);
+    }
+  }
+
+  function toggleValueSelection(val) {
+    const next = new Set(tempSelectedValues);
+    if (next.has(val)) {
+      next.delete(val);
+    } else {
+      next.add(val);
+    }
+    tempSelectedValues = next;
+  }
+
+  function applyColumnFilter(colKey) {
+    const allVals = getUniqueValuesForColumn(colKey);
+    if (tempSelectedValues.size === allVals.length) {
+      delete filterRules[colKey];
+      filterRules = { ...filterRules };
+    } else {
+      filterRules = {
+        ...filterRules,
+        [colKey]: new Set(tempSelectedValues)
+      };
+    }
+    updateProcessedContent();
+    closeHeaderMenu();
+  }
+
+  function clearColumnFilter(colKey) {
+    delete filterRules[colKey];
+    filterRules = { ...filterRules };
+    updateProcessedContent();
+    closeHeaderMenu();
+  }
+
+  // DOM mutation observer for table header decorator
+  function decorateTableHeaders() {
+    if (mode !== Mode.table) return;
+    const thEls = document.querySelectorAll('.jse-table-mode table th:not(.jse-table-cell-gutter)');
+    thEls.forEach((th) => {
+      let colName = '';
+      const colNameSpan = th.querySelector('.jse-column-name');
+      if (colNameSpan) {
+        colName = colNameSpan.textContent.trim();
+      } else {
+        colName = th.textContent.replace(/[▲▼🔍0-9]/g, '').trim();
+      }
+
+      if (!colName) return;
+
+      let btn = th.querySelector('.excel-header-trigger');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'excel-header-trigger';
+        th.appendChild(btn);
+      }
+
+      const sortIdx = sortRules.findIndex(r => r.key === colName);
+      let sortBadge = '';
+      if (sortIdx >= 0) {
+        const rule = sortRules[sortIdx];
+        const arrow = rule.dir === 'asc' ? '▲' : '▼';
+        sortBadge = sortRules.length > 1 ? `${arrow}${sortIdx + 1}` : arrow;
+      }
+
+      const isFiltered = filterRules[colName] && filterRules[colName].size < getUniqueValuesForColumn(colName).length;
+      let filterBadge = isFiltered ? '🔍' : '';
+
+      btn.innerHTML = `<span class="excel-badge">${sortBadge}${filterBadge}</span><span class="excel-arrow">▼</span>`;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        openHeaderMenu(colName, btn);
+      };
+    });
+  }
+
+  // 특정 셀 활성화 및 편집 모드 트리거 지원 함수
+  function activateCellAt(rowIndex, colIndex) {
+    const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
+    if (rowIndex < 0 || rowIndex >= rows.length) return;
+
+    const row = rows[rowIndex];
+    const cells = Array.from(row.querySelectorAll('td.jse-table-cell'));
+    if (colIndex < 0 || colIndex >= cells.length) return;
+
+    const targetTd = cells[colIndex];
+    currentActiveCellIndex = { row: rowIndex, col: colIndex };
+
+    const valEl = targetTd.querySelector('.jse-value');
+    if (valEl) {
+      const dblEvent = new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window });
+      valEl.dispatchEvent(dblEvent);
+    } else {
+      targetTd.focus();
+    }
+  }
+
+  // --- 구글 스프레드시트 UX: 단일 클릭 편집, 전체 선택, Tab/방향키 이동 ---
+  function setupSpreadsheetUX() {
+    // 1. 단일 클릭 즉시 편집 모드 활성화 & 전체 선택 (Table 및 Tree 공통)
+    const handleGlobalClick = (e) => {
+      const target = e.target;
+      if (!target || typeof target.closest !== 'function') return;
+
+      if (target.closest('.excel-header-trigger') || target.closest('.excel-menu-popup')) return;
+
+      const cellVal = target.closest('.jse-value, .jse-key');
+      if (cellVal && !cellVal.classList.contains('jse-editing')) {
+        const td = cellVal.closest('td.jse-table-cell');
+        if (td) {
+          const row = td.closest('tr.jse-table-row');
+          if (row) {
+            const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
+            const cells = Array.from(row.querySelectorAll('td.jse-table-cell'));
+            currentActiveCellIndex = {
+              row: rows.indexOf(row),
+              col: cells.indexOf(td)
+            };
+          }
+        }
+
+        const dblEvent = new MouseEvent('dblclick', {
+          bubbles: true,
+          cancelable: true,
+          view: window
+        });
+        cellVal.dispatchEvent(dblEvent);
+      }
+    };
+
+    // 2. 포커스 시 input / textarea / editable 영역 전체 선택
+    const handleGlobalFocusIn = (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        if (!target.classList.contains('jse-hidden-input')) {
+          setTimeout(() => {
+            target.select?.();
+          }, 10);
+        }
+      } else if (target.isContentEditable || target.classList.contains('cm-content')) {
+        setTimeout(() => {
+          const range = document.createRange();
+          range.selectNodeContents(target);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }, 10);
+      }
+    };
+
+    // 3. Tab, Shift+Tab 및 방향키(Arrow) 이동 핸들러
+    const handleGlobalKeyDown = (e) => {
+      if (mode !== Mode.table) return;
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
+        if (rows.length === 0) return;
+
+        let { row, col } = currentActiveCellIndex;
+        const currentRowCells = Array.from(rows[row]?.querySelectorAll('td.jse-table-cell') || []);
+
+        if (!e.shiftKey) {
+          // 오른쪽 셀 이동
+          if (col < currentRowCells.length - 1) {
+            col += 1;
+          } else if (row < rows.length - 1) {
+            row += 1;
+            col = 0;
+          }
+        } else {
+          // 왼쪽 셀 이동
+          if (col > 0) {
+            col -= 1;
+          } else if (row > 0) {
+            row -= 1;
+            const prevRowCells = Array.from(rows[row].querySelectorAll('td.jse-table-cell'));
+            col = prevRowCells.length - 1;
+          }
+        }
+
+        activateCellAt(row, col);
+        return;
+      }
+
+      // 방향키 처리 (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        const active = document.activeElement;
+        const isEditingInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && !active.classList.contains('jse-hidden-input');
+
+        // Ctrl/Alt 조합 또는 일반 선택 상태에서의 방향키 셀 이동
+        if (!isEditingInput || e.ctrlKey || e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
+          if (rows.length === 0) return;
+
+          let { row, col } = currentActiveCellIndex;
+          if (e.key === 'ArrowRight') col += 1;
+          if (e.key === 'ArrowLeft') col -= 1;
+          if (e.key === 'ArrowDown') row += 1;
+          if (e.key === 'ArrowUp') row -= 1;
+
+          activateCellAt(row, col);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleGlobalClick, true);
+    document.addEventListener('focusin', handleGlobalFocusIn, true);
+    document.addEventListener('keydown', handleGlobalKeyDown, true);
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, true);
+      document.removeEventListener('focusin', handleGlobalFocusIn, true);
+      document.removeEventListener('keydown', handleGlobalKeyDown, true);
+    };
+  }
+
   onMount(() => {
     loadFontSettings();
     loadFontSize();
@@ -366,19 +741,35 @@
       attachFontSizeControl();
     }, 50);
 
-    const cleanup = setupI18nObserver();
-    return cleanup;
+    const cleanupI18n = setupI18nObserver();
+    const cleanupUX = setupSpreadsheetUX();
+
+    const headerInterval = setInterval(() => {
+      decorateTableHeaders();
+    }, 200);
+
+    return () => {
+      cleanupI18n();
+      cleanupUX();
+      clearInterval(headerInterval);
+    };
   });
 
   function handleModeChange(newMode) {
     mode = newMode;
     setTimeout(() => {
       attachFontSizeControl();
+      decorateTableHeaders();
     }, 50);
   }
 
   function handleContentChange(newContent) {
-    content = newContent;
+    if (newContent && newContent.json) {
+      rawData = newContent.json;
+      updateProcessedContent();
+    } else {
+      content = newContent;
+    }
   }
 </script>
 
@@ -555,6 +946,116 @@
     </div>
   {/if}
 
+  <!-- 활성 정렬 & 필터 상태 정보 바 (테이블 모드 전용) -->
+  {#if mode === Mode.table && (sortRules.length > 0 || Object.keys(filterRules).length > 0)}
+    <div class="excel-status-bar">
+      <div class="excel-status-info">
+        {#if sortRules.length > 0}
+          <span class="status-tag sort-tag">
+            📊 정렬: {sortRules.map((r, i) => `${r.key} (${r.dir === 'asc' ? '오름차순' : '내림차순'}${sortRules.length > 1 ? ' #' + (i + 1) : ''})`).join(', ')}
+          </span>
+        {/if}
+        {#if Object.keys(filterRules).length > 0}
+          <span class="status-tag filter-tag">
+            🔍 필터 적용 중 ({Object.keys(filterRules).join(', ')})
+          </span>
+        {/if}
+      </div>
+      <button class="excel-reset-btn" onclick={handleClearAllSortAndFilter}>
+        🔄 전체 정렬 &amp; 필터 초기화
+      </button>
+    </div>
+  {/if}
+
+  <!-- 엑셀 스타일 헤더 정렬 & 필터 팝업 메뉴 -->
+  {#if activeMenuCol}
+    <div class="excel-backdrop" onclick={closeHeaderMenu} onkeydown={(e) => e.key === 'Escape' && closeHeaderMenu()} role="presentation" tabindex="-1">
+      <div
+        class="excel-menu-popup"
+        style="top: {menuPos.top}px; left: {menuPos.left}px;"
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => e.stopPropagation()}
+        role="dialog"
+        tabindex="-1"
+      >
+        <div class="popup-header">
+          <span class="col-title">열: <strong>{activeMenuCol}</strong></span>
+          <button class="popup-close" onclick={closeHeaderMenu}>&times;</button>
+        </div>
+
+        <!-- 정렬 섹션 -->
+        <div class="popup-section">
+          <div class="section-title">정렬 옵션</div>
+          <button class="menu-action-btn" onclick={() => handleSingleSort(activeMenuCol, 'asc')}>
+            <span class="icon">▲</span> 오름차순 정렬 (A-Z / 0-9)
+          </button>
+          <button class="menu-action-btn" onclick={() => handleSingleSort(activeMenuCol, 'desc')}>
+            <span class="icon">▼</span> 내림차순 정렬 (Z-A / 9-0)
+          </button>
+          <button class="menu-action-btn highlight" onclick={() => handleAddMultiSort(activeMenuCol, 'asc')}>
+            <span class="icon">➕</span> 다중 정렬 추가 (오름차순)
+          </button>
+          <button class="menu-action-btn highlight" onclick={() => handleAddMultiSort(activeMenuCol, 'desc')}>
+            <span class="icon">➕</span> 다중 정렬 추가 (내림차순)
+          </button>
+          {#if sortRules.some(r => r.key === activeMenuCol)}
+            <button class="menu-action-btn danger" onclick={() => handleClearSort(activeMenuCol)}>
+              <span class="icon">❌</span> 이 열 정렬 해제
+            </button>
+          {/if}
+        </div>
+
+        <div class="popup-divider"></div>
+
+        <!-- 필터 섹션 -->
+        <div class="popup-section">
+          <div class="section-title">값 필터링 (Filter)</div>
+          <input
+            type="text"
+            class="filter-search-input"
+            bind:value={filterSearchQuery}
+            placeholder="🔍 값 검색..."
+          />
+
+          {#key activeMenuCol}
+            {@const uniqueVals = getUniqueValuesForColumn(activeMenuCol).filter(v => v.toLowerCase().includes(filterSearchQuery.toLowerCase()))}
+            <div class="value-list-container">
+              <label class="value-item select-all">
+                <input
+                  type="checkbox"
+                  checked={tempSelectedValues.size === getUniqueValuesForColumn(activeMenuCol).length}
+                  onchange={() => toggleSelectAllValues(activeMenuCol)}
+                />
+                <strong>(전체 선택)</strong>
+              </label>
+
+              {#each uniqueVals as val}
+                <label class="value-item">
+                  <input
+                    type="checkbox"
+                    checked={tempSelectedValues.has(val)}
+                    onchange={() => toggleValueSelection(val)}
+                  />
+                  <span>{val === '' ? '(빈 값)' : val}</span>
+                </label>
+              {:else}
+                <div class="no-result">검색 결과가 없습니다.</div>
+              {/each}
+            </div>
+          {/key}
+
+          <div class="filter-actions">
+            {#if filterRules[activeMenuCol]}
+              <button class="btn-sub danger-sub" onclick={() => clearColumnFilter(activeMenuCol)}>필터 해제</button>
+            {/if}
+            <button class="btn-sub" onclick={closeHeaderMenu}>취소</button>
+            <button class="btn-sub primary-sub" onclick={() => applyColumnFilter(activeMenuCol)}>적용</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <main class="editor-container">
     <JSONEditor
       {content}
@@ -597,6 +1098,51 @@
 
   .btn-primary:hover {
     background-color: #1d4ed8;
+  }
+
+  /* Status Bar Style */
+  .excel-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 12px;
+    background-color: #e0f2fe;
+    border-bottom: 1px solid #bae6fd;
+    font-size: 12px;
+    color: #0369a1;
+  }
+
+  :global([data-theme="dark"]) .excel-status-bar {
+    background-color: #0f2942;
+    border-bottom-color: #1e40af;
+    color: #7dd3fc;
+  }
+
+  .excel-status-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-tag {
+    font-weight: 600;
+  }
+
+  .excel-reset-btn {
+    background: #ffffff;
+    border: 1px solid #0284c7;
+    color: #0284c7;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  :global([data-theme="dark"]) .excel-reset-btn {
+    background: #1e293b;
+    border-color: #38bdf8;
+    color: #38bdf8;
   }
 
   /* Modal Style */
@@ -751,6 +1297,222 @@
     justify-content: flex-end;
   }
 
+  /* Excel Header Dropdown Menu Style */
+  .excel-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2000;
+  }
+
+  .excel-menu-popup {
+    position: absolute;
+    width: 270px;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    z-index: 2001;
+    font-family: var(--app-font-ui);
+  }
+
+  :global([data-theme="dark"]) .excel-menu-popup {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #f8fafc;
+  }
+
+  .popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px 8px 6px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  :global([data-theme="dark"]) .popup-header {
+    border-bottom-color: #334155;
+  }
+
+  .col-title {
+    font-size: 13px;
+    color: #334155;
+  }
+
+  :global([data-theme="dark"]) .col-title {
+    color: #cbd5e1;
+  }
+
+  .popup-close {
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #64748b;
+  }
+
+  .popup-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 0;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    padding: 2px 6px;
+    text-transform: uppercase;
+  }
+
+  .menu-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 12px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    color: #0f172a;
+    transition: background 0.12s;
+  }
+
+  :global([data-theme="dark"]) .menu-action-btn {
+    color: #f1f5f9;
+  }
+
+  .menu-action-btn:hover {
+    background-color: #f1f5f9;
+  }
+
+  :global([data-theme="dark"]) .menu-action-btn:hover {
+    background-color: #334155;
+  }
+
+  .menu-action-btn.highlight {
+    color: #0284c7;
+    font-weight: 600;
+  }
+
+  :global([data-theme="dark"]) .menu-action-btn.highlight {
+    color: #38bdf8;
+  }
+
+  .menu-action-btn.danger {
+    color: #dc2626;
+  }
+
+  .popup-divider {
+    height: 1px;
+    background-color: #e2e8f0;
+    margin: 4px 0;
+  }
+
+  :global([data-theme="dark"]) .popup-divider {
+    background-color: #334155;
+  }
+
+  .filter-search-input {
+    width: 100%;
+    padding: 5px 8px;
+    font-size: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    outline: none;
+    margin-bottom: 4px;
+  }
+
+  :global([data-theme="dark"]) .filter-search-input {
+    background-color: #0f172a;
+    border-color: #475569;
+    color: #ffffff;
+  }
+
+  .value-list-container {
+    max-height: 140px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  :global([data-theme="dark"]) .value-list-container {
+    border-color: #334155;
+  }
+
+  .value-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 2px 4px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+
+  .value-item:hover {
+    background-color: #f8fafc;
+  }
+
+  :global([data-theme="dark"]) .value-item:hover {
+    background-color: #334155;
+  }
+
+  .no-result {
+    font-size: 12px;
+    color: #94a3b8;
+    padding: 8px;
+    text-align: center;
+  }
+
+  .filter-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .btn-sub {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    cursor: pointer;
+  }
+
+  :global([data-theme="dark"]) .btn-sub {
+    background-color: #334155;
+    border-color: #475569;
+    color: #f8fafc;
+  }
+
+  .btn-sub.primary-sub {
+    background-color: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+  }
+
+  .btn-sub.danger-sub {
+    color: #dc2626;
+    border-color: #fca5a5;
+  }
+
   .editor-container {
     flex: 1;
     width: 100%;
@@ -761,5 +1523,47 @@
   .editor-container :global(.jse-main) {
     height: 100% !important;
     border: none !important;
+  }
+
+  /* 글로벌 엑셀 헤더 트리거 버튼 스타일 */
+  :global(.excel-header-trigger) {
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    padding: 1px 4px !important;
+    margin-left: 4px !important;
+    font-size: 11px !important;
+    color: #475569 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    border-radius: 3px !important;
+  }
+
+  :global([data-theme="dark"] .excel-header-trigger) {
+    color: #cbd5e1 !important;
+  }
+
+  :global(.excel-header-trigger:hover) {
+    background: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  :global([data-theme="dark"] .excel-header-trigger:hover) {
+    background: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  :global(.excel-badge) {
+    font-weight: 800 !important;
+    color: #0284c7 !important;
+    font-size: 11px !important;
+  }
+
+  :global([data-theme="dark"] .excel-badge) {
+    color: #38bdf8 !important;
+  }
+
+  :global(.excel-arrow) {
+    font-size: 9px !important;
+    opacity: 0.7;
   }
 </style>
