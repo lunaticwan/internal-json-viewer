@@ -6,6 +6,7 @@
    */
   import { onMount } from 'svelte';
   import { JSONEditor, Mode } from 'svelte-jsoneditor';
+  import clsx from 'clsx';
   import { onRenderMenu, onRenderContextMenu, setupI18nObserver } from './i18n.js';
   import {
     PRESET_UI_FONTS,
@@ -19,6 +20,12 @@
     calculateDatasetMetrics
   } from './utils/llmUtils.js';
   import { getProcessedData } from './utils/tableUtils.js';
+  import {
+    parseTheme,
+    parseFontSize,
+    parseRowHeight,
+    parseFontSettings
+  } from './utils/schemaUtils.js';
 
   // ---------------------------------------------------------------------------
   // [상태 관리: UI 커스텀 설정 및 모달]
@@ -333,40 +340,31 @@
     applyTheme();
   }
 
-  /** 저장된 테마 설정 로드 */
+  /** 저장된 테마 설정 로드 (Zod 검증 적용) */
   function loadTheme() {
     try {
       const saved = localStorage.getItem('imjson_theme');
-      if (saved === 'dark' || saved === 'light') {
-        theme = saved;
-      }
+      theme = parseTheme(saved);
     } catch (err) {
       console.error('Failed to load theme:', err);
     }
   }
 
-  /** 저장된 폰트 크기 로드 */
+  /** 저장된 폰트 크기 로드 (Zod 검증 적용) */
   function loadFontSize() {
     try {
       const saved = localStorage.getItem('imjson_font_size') || localStorage.getItem('imbank_font_size');
-      if (saved) {
-        const parsed = parseInt(saved, 10);
-        if (!isNaN(parsed) && FONT_SIZES.includes(parsed)) {
-          fontSize = parsed;
-        }
-      }
+      fontSize = parseFontSize(saved);
     } catch (err) {
       console.error('Failed to load font size:', err);
     }
   }
 
-  /** 저장된 행 높이 로드 */
+  /** 저장된 행 높이 로드 (Zod 검증 적용) */
   function loadRowHeight() {
     try {
       const saved = localStorage.getItem('imjson_row_height');
-      if (saved && ROW_HEIGHTS.some((r) => r.value === saved)) {
-        rowHeight = saved;
-      }
+      rowHeight = parseRowHeight(saved);
     } catch (err) {
       console.error('Failed to load row height:', err);
     }
@@ -528,19 +526,17 @@
     }
   }
 
-  /** 저장된 폰트 설정 로드 */
+  /** 저장된 폰트 설정 로드 (Zod 검증 적용) */
   function loadFontSettings() {
     try {
       const saved = localStorage.getItem('imjson_font_settings') || localStorage.getItem('imbank_font_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.selectedUiFontMode) selectedUiFontMode = parsed.selectedUiFontMode;
-        if (parsed.selectedUiFontValue) selectedUiFontValue = parsed.selectedUiFontValue;
-        if (parsed.customUiFont) customUiFont = parsed.customUiFont;
-        if (parsed.selectedCodeFontMode) selectedCodeFontMode = parsed.selectedCodeFontMode;
-        if (parsed.selectedCodeFontValue) selectedCodeFontValue = parsed.selectedCodeFontValue;
-        if (parsed.customCodeFont) customCodeFont = parsed.customCodeFont;
-      }
+      const settings = parseFontSettings(saved);
+      selectedUiFontMode = settings.selectedUiFontMode;
+      selectedUiFontValue = settings.selectedUiFontValue;
+      customUiFont = settings.customUiFont;
+      selectedCodeFontMode = settings.selectedCodeFontMode;
+      selectedCodeFontValue = settings.selectedCodeFontValue;
+      customCodeFont = settings.customCodeFont;
     } catch (err) {
       console.error('Failed to load font settings:', err);
     }
@@ -1386,7 +1382,7 @@
     <JSONEditor
       {content}
       {mode}
-      className={theme === 'dark' ? 'jse-theme-dark' : ''}
+      className={clsx(theme === 'dark' && 'jse-theme-dark')}
       onRenderMenu={handleRenderMenu}
       {onRenderContextMenu}
       onChange={handleContentChange}
