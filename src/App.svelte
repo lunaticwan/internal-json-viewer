@@ -101,6 +101,9 @@
   let mode = $state(Mode.tree);
   let fileInput = $state();
 
+  // 현재 활성화된 테이블 셀 인덱스 레퍼런스 (행, 열)
+  let currentActiveCellIndex = $state({ row: 0, col: 0 });
+
   // 데이터 정렬 & 필터링 계산 함수
   function getProcessedData(source, sorts, filters) {
     if (!Array.isArray(source)) return source;
@@ -448,7 +451,6 @@
     };
     filterSearchQuery = '';
 
-    // 현재 설정된 필터 상태 복사 또는 전체 선택 기본값 설정
     const allVals = getUniqueValuesForColumn(colKey);
     if (filterRules[colKey]) {
       tempSelectedValues = new Set(filterRules[colKey]);
@@ -557,7 +559,6 @@
         th.appendChild(btn);
       }
 
-      // 정렬 뱃지 확인
       const sortIdx = sortRules.findIndex(r => r.key === colName);
       let sortBadge = '';
       if (sortIdx >= 0) {
@@ -566,7 +567,6 @@
         sortBadge = sortRules.length > 1 ? `${arrow}${sortIdx + 1}` : arrow;
       }
 
-      // 필터 뱃지 확인
       const isFiltered = filterRules[colName] && filterRules[colName].size < getUniqueValuesForColumn(colName).length;
       let filterBadge = isFiltered ? '🔍' : '';
 
@@ -576,6 +576,154 @@
         openHeaderMenu(colName, btn);
       };
     });
+  }
+
+  // 특정 셀 활성화 및 편집 모드 트리거 지원 함수
+  function activateCellAt(rowIndex, colIndex) {
+    const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
+    if (rowIndex < 0 || rowIndex >= rows.length) return;
+
+    const row = rows[rowIndex];
+    const cells = Array.from(row.querySelectorAll('td.jse-table-cell'));
+    if (colIndex < 0 || colIndex >= cells.length) return;
+
+    const targetTd = cells[colIndex];
+    currentActiveCellIndex = { row: rowIndex, col: colIndex };
+
+    const valEl = targetTd.querySelector('.jse-value');
+    if (valEl) {
+      const dblEvent = new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window });
+      valEl.dispatchEvent(dblEvent);
+    } else {
+      targetTd.focus();
+    }
+  }
+
+  // --- 구글 스프레드시트 UX: 단일 클릭 편집, 전체 선택, Tab/방향키 이동 ---
+  function setupSpreadsheetUX() {
+    // 1. 단일 클릭 즉시 편집 모드 활성화 & 전체 선택 (Table 및 Tree 공통)
+    const handleGlobalClick = (e) => {
+      const target = e.target;
+      if (!target || typeof target.closest !== 'function') return;
+
+      if (target.closest('.excel-header-trigger') || target.closest('.excel-menu-popup')) return;
+
+      const cellVal = target.closest('.jse-value, .jse-key');
+      if (cellVal && !cellVal.classList.contains('jse-editing')) {
+        const td = cellVal.closest('td.jse-table-cell');
+        if (td) {
+          const row = td.closest('tr.jse-table-row');
+          if (row) {
+            const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
+            const cells = Array.from(row.querySelectorAll('td.jse-table-cell'));
+            currentActiveCellIndex = {
+              row: rows.indexOf(row),
+              col: cells.indexOf(td)
+            };
+          }
+        }
+
+        const dblEvent = new MouseEvent('dblclick', {
+          bubbles: true,
+          cancelable: true,
+          view: window
+        });
+        cellVal.dispatchEvent(dblEvent);
+      }
+    };
+
+    // 2. 포커스 시 input / textarea / editable 영역 전체 선택
+    const handleGlobalFocusIn = (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        if (!target.classList.contains('jse-hidden-input')) {
+          setTimeout(() => {
+            target.select?.();
+          }, 10);
+        }
+      } else if (target.isContentEditable || target.classList.contains('cm-content')) {
+        setTimeout(() => {
+          const range = document.createRange();
+          range.selectNodeContents(target);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }, 10);
+      }
+    };
+
+    // 3. Tab, Shift+Tab 및 방향키(Arrow) 이동 핸들러
+    const handleGlobalKeyDown = (e) => {
+      if (mode !== Mode.table) return;
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
+        if (rows.length === 0) return;
+
+        let { row, col } = currentActiveCellIndex;
+        const currentRowCells = Array.from(rows[row]?.querySelectorAll('td.jse-table-cell') || []);
+
+        if (!e.shiftKey) {
+          // 오른쪽 셀 이동
+          if (col < currentRowCells.length - 1) {
+            col += 1;
+          } else if (row < rows.length - 1) {
+            row += 1;
+            col = 0;
+          }
+        } else {
+          // 왼쪽 셀 이동
+          if (col > 0) {
+            col -= 1;
+          } else if (row > 0) {
+            row -= 1;
+            const prevRowCells = Array.from(rows[row].querySelectorAll('td.jse-table-cell'));
+            col = prevRowCells.length - 1;
+          }
+        }
+
+        activateCellAt(row, col);
+        return;
+      }
+
+      // 방향키 처리 (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        const active = document.activeElement;
+        const isEditingInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && !active.classList.contains('jse-hidden-input');
+
+        // Ctrl/Alt 조합 또는 일반 선택 상태에서의 방향키 셀 이동
+        if (!isEditingInput || e.ctrlKey || e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
+          if (rows.length === 0) return;
+
+          let { row, col } = currentActiveCellIndex;
+          if (e.key === 'ArrowRight') col += 1;
+          if (e.key === 'ArrowLeft') col -= 1;
+          if (e.key === 'ArrowDown') row += 1;
+          if (e.key === 'ArrowUp') row -= 1;
+
+          activateCellAt(row, col);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleGlobalClick, true);
+    document.addEventListener('focusin', handleGlobalFocusIn, true);
+    document.addEventListener('keydown', handleGlobalKeyDown, true);
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, true);
+      document.removeEventListener('focusin', handleGlobalFocusIn, true);
+      document.removeEventListener('keydown', handleGlobalKeyDown, true);
+    };
   }
 
   onMount(() => {
@@ -593,14 +741,16 @@
       attachFontSizeControl();
     }, 50);
 
-    const cleanup = setupI18nObserver();
+    const cleanupI18n = setupI18nObserver();
+    const cleanupUX = setupSpreadsheetUX();
 
     const headerInterval = setInterval(() => {
       decorateTableHeaders();
     }, 200);
 
     return () => {
-      cleanup();
+      cleanupI18n();
+      cleanupUX();
       clearInterval(headerInterval);
     };
   });
