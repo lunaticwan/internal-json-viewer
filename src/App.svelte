@@ -1,7 +1,19 @@
 <script>
+  /**
+   * @file App.svelte
+   * @description iMJSON 최상위 에디터 애플리케이션 컴포넌트.
+   * JSON 트리/테이블/코드 모드 편집, LLM 도구 연동, 엑셀/스프레드시트 UX, 폰트 및 테마 설정 제공.
+   */
   import { onMount } from 'svelte';
   import { JSONEditor, Mode } from 'svelte-jsoneditor';
   import { onRenderMenu, onRenderContextMenu, setupI18nObserver } from './i18n.js';
+  import {
+    PRESET_UI_FONTS,
+    PRESET_CODE_FONTS,
+    FONT_SIZES,
+    ROW_HEIGHTS,
+    SAMPLE_PRESETS
+  } from './constants/editor.js';
   import {
     repairJsonString,
     escapeJsonString,
@@ -10,145 +22,54 @@
     generateTypeScriptTypes,
     calculateDatasetMetrics
   } from './utils/llmUtils.js';
+  import { getProcessedData } from './utils/tableUtils.js';
 
-  // 기본 프리셋 폰트 정의
-  const presetUiFonts = [
-    { label: 'Pretendard (기본)', value: "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif" },
-    { label: '맑은 고딕 (Malgun Gothic)', value: "'Malgun Gothic', '맑은 고딕', sans-serif" },
-    { label: '나눔고딕 (NanumGothic)', value: "'NanumGothic', '나눔고딕', sans-serif" },
-    { label: '돋움 (Dotum)', value: "'Dotum', '돋움', sans-serif" },
-    { label: '굴림 (Gulim)', value: "'Gulim', '굴림', sans-serif" },
-    { label: 'Arial', value: "Arial, sans-serif" },
-    { label: 'Segoe UI', value: "'Segoe UI', sans-serif" }
-  ];
+  // ---------------------------------------------------------------------------
+  // [상태 관리: UI 커스텀 설정 및 모달]
+  // ---------------------------------------------------------------------------
 
-  const presetCodeFonts = [
-    { label: 'Cascadia Code (기본)', value: "'Cascadia Code', 'Cascadia Mono', Consolas, monospace" },
-    { label: 'Consolas', value: "Consolas, 'Courier New', monospace" },
-    { label: 'D2Coding', value: "'D2Coding', 'D2 coding', monospace" },
-    { label: 'Fira Code', value: "'Fira Code', monospace" },
-    { label: 'JetBrains Mono', value: "'JetBrains Mono', monospace" },
-    { label: 'Source Code Pro', value: "'Source Code Pro', monospace" },
-    { label: 'Courier New', value: "'Courier New', monospace" }
-  ];
-
-  // 폰트 크기 및 행높이 선택 리스트 (px)
-  const fontSizes = [11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 28];
-  const rowHeights = [
-    { label: '좁게 (18px)', value: '18px' },
-    { label: '기본 (24px)', value: '24px' },
-    { label: '넓게 (30px)', value: '30px' },
-    { label: '매우 넓게 (36px)', value: '36px' }
-  ];
-
-  // 샘플 데이터 프리셋 정의
-  const samplePresets = [
-    {
-      id: 'default',
-      name: '기본 iMJSON 샘플',
-      data: [
-        {
-          "id": 1,
-          "name": "iMJSON",
-          "category": "Developer Tool",
-          "status": "Active",
-          "version": "1.0.0",
-          "offlineSupport": true,
-          "description": "iMJSON 사내 내부망 JSON 에디터"
-        },
-        {
-          "id": 2,
-          "name": "Tree Mode Visualizer",
-          "category": "Feature",
-          "status": "Active",
-          "version": "1.2.0",
-          "offlineSupport": true,
-          "description": "JSON 구조를 계층적 트리 형태로 시각화 및 편집"
-        },
-        {
-          "id": 3,
-          "name": "Table Grid Viewer",
-          "category": "Feature",
-          "status": "Active",
-          "version": "1.1.0",
-          "offlineSupport": true,
-          "description": "객체 배열 데이터를 표(Table) 형태로 조회 및 수정"
-        }
-      ]
-    },
-    {
-      id: 'llm_tool_call',
-      name: 'LLM Function Call 스키마 응답',
-      data: {
-        "tool_call_id": "call_98f12a3d_banking_transfer",
-        "name": "execute_fund_transfer",
-        "arguments": {
-          "source_account": "110-123-456789",
-          "target_account": "100-987-654321",
-          "amount": 500000,
-          "currency": "KRW",
-          "memo": "iMJSON LLM 개발 도구 테스트 송금",
-          "verification_token": "a8f3-4d2c-9810-e2ff"
-        },
-        "response_status": "success",
-        "execution_time_ms": 42.8,
-        "audit": {
-          "ip_address": "10.100.24.15",
-          "system_env": "Internal Intranet"
-        }
-      }
-    },
-    {
-      id: 'banking_api',
-      name: '사내 금융 API 응답 데이터',
-      data: {
-        "header": {
-          "tr_code": "M3002_ACC_LIST",
-          "status_code": "200",
-          "message": "정상 처리되었습니다.",
-          "timestamp": "2025-05-18T14:20:00+09:00"
-        },
-        "body": {
-          "user_id": "usr_99812",
-          "user_name": "홍길동",
-          "accounts": [
-            { "acc_num": "110-12-34567", "type": "보통예금", "balance": 15420000, "is_active": true },
-            { "acc_num": "210-98-76543", "type": "정기적금", "balance": 50000000, "is_active": true },
-            { "acc_num": "330-11-22334", "type": "주택청약", "balance": 12000000, "is_active": false }
-          ]
-        }
-      }
-    }
-  ];
-
+  /** 시스템 제공 설치 폰트 목록 배열 */
   let systemFonts = $state([]);
 
-  // 상태 관리
-  let selectedUiFontMode = $state('preset'); // 'preset', 'system', 'custom'
-  let selectedUiFontValue = $state(presetUiFonts[0].value);
+  /** UI 폰트 선택 모드 및 선택 값 ('preset' | 'system' | 'custom') */
+  let selectedUiFontMode = $state('preset');
+  let selectedUiFontValue = $state(PRESET_UI_FONTS[0].value);
   let customUiFont = $state('');
 
-  let selectedCodeFontMode = $state('preset'); // 'preset', 'system', 'custom'
-  let selectedCodeFontValue = $state(presetCodeFonts[0].value);
+  /** Code 폰트 선택 모드 및 선택 값 ('preset' | 'system' | 'custom') */
+  let selectedCodeFontMode = $state('preset');
+  let selectedCodeFontValue = $state(PRESET_CODE_FONTS[0].value);
   let customCodeFont = $state('');
 
+  /** 폰트 크기(px), 행 높이(px) 및 테마 상태 ('light' | 'dark') */
   let fontSize = $state(15);
   let rowHeight = $state('24px');
-  let theme = $state('light'); // 'light' or 'dark'
+  let theme = $state('light');
+
+  /** 에디터 상단 커스텀 툴바 영역 Element 레퍼런스 */
   let toolbarControlsEl = $state();
 
+  /** 모달 표시 상태 및 LLM 툴박스 활성 탭 ('schema' | 'types' | 'escape') */
   let showFontModal = $state(false);
   let showLlmToolModal = $state(false);
-  let activeLlmTab = $state('schema'); // 'schema', 'types', 'escape'
+  let activeLlmTab = $state('schema');
 
-  // 드래그 앤 드롭 상태
+  // ---------------------------------------------------------------------------
+  // [상태 관리: 드래그 앤 드롭 & 토스트 알림]
+  // ---------------------------------------------------------------------------
+
+  /** 전체 화면 파일 드롭 오버레이 감지 상태 및 타이머 */
   let isDraggingFile = $state(false);
   let dragLeaveTimer;
 
-  // 알림 토스트 메시지
+  /** 하단 알림 토스트 메시지 및 타이머 레퍼런스 */
   let toastMessage = $state('');
   let toastTimer;
 
+  /**
+   * 알림 토스트 팝업을 표시함.
+   * @param {string} msg - 표시할 메시지
+   */
   function showToast(msg) {
     toastMessage = msg;
     clearTimeout(toastTimer);
@@ -157,88 +78,55 @@
     }, 2500);
   }
 
-  // 원본 데이터 저장소
-  let rawData = $state(samplePresets[0].data);
+  // ---------------------------------------------------------------------------
+  // [상태 관리: 데이터 원본, 정렬 & 필터]
+  // ---------------------------------------------------------------------------
 
-  // 다중 정렬 규칙: [{ key: 'category', dir: 'asc' }, { key: 'name', dir: 'desc' }]
+  /** 원본 JSON 데이터 저장소 */
+  let rawData = $state(SAMPLE_PRESETS[0].data);
+
+  /** 다중 정렬 규칙 배열 [{ key: 'category', dir: 'asc' }] */
   let sortRules = $state([]);
-  // 필터 규칙: { category: Set(['Developer Tool']), ... }
+
+  /** 컬럼별 필터 규칙 맵 { category: Set(['Developer Tool']) } */
   let filterRules = $state({});
 
-  // Memoization 캐시
+  /** 컬럼별 유니크 값 추출 캐시 맵 */
   let uniqueValuesCache = new Map();
 
-  // 팝업 오픈 상태
-  let activeMenuCol = $state(null); // 연 열(Column) 이름
+  /** 테이블 헤더 정렬/필터 팝업 열기 상태 및 좌표 정보 */
+  let activeMenuCol = $state(null);
   let menuPos = $state({ top: 0, left: 0 });
   let filterSearchQuery = $state('');
   let tempSelectedValues = $state(new Set());
 
-  // 계산된 JSON 에디터 전달용 content
-  let content = $state({ json: samplePresets[0].data });
+  /** svelte-jsoneditor 전달용 content 바인딩 상태 */
+  let content = $state({ json: SAMPLE_PRESETS[0].data });
 
+  /** 에디터 뷰 모드 및 파일 업로드 input 레퍼런스 */
   let mode = $state(Mode.tree);
   let fileInput = $state();
 
-  // 현재 활성화된 테이블 셀 인덱스 레퍼런스 (행, 열)
+  /** 테이블 모드 현재 활성화된 셀 위치 좌표 ({ row: number, col: number }) */
   let currentActiveCellIndex = $state({ row: 0, col: 0 });
 
-  // 실시간 메트릭스 계산
+  // ---------------------------------------------------------------------------
+  // [파생 상태 (Derived State)]
+  // ---------------------------------------------------------------------------
+
+  /** 실시간 데이터 세트 노드 수, 바이트 용량 및 추정 LLM 토큰 수 계산 */
   let datasetMetrics = $derived.by(() => {
     const raw = content?.json !== undefined ? content.json : content?.text || '';
     return calculateDatasetMetrics(raw);
   });
 
-  // 데이터 정렬 & 필터링 계산 함수
-  function getProcessedData(source, sorts, filters) {
-    if (!Array.isArray(source)) return source;
+  // ---------------------------------------------------------------------------
+  // [비즈니스 로직: 데이터 가공 및 파싱]
+  // ---------------------------------------------------------------------------
 
-    let result = [...source];
-
-    // 1. 필터링 적용
-    if (filters && Object.keys(filters).length > 0) {
-      result = result.filter(row => {
-        if (!row || typeof row !== 'object') return true;
-        for (const [key, allowedSet] of Object.entries(filters)) {
-          if (!allowedSet || allowedSet.size === 0) continue;
-          const valStr = String(row[key] ?? '');
-          if (!allowedSet.has(valStr)) return false;
-        }
-        return true;
-      });
-    }
-
-    // 2. 다중 정렬 적용
-    if (sorts && sorts.length > 0) {
-      result.sort((a, b) => {
-        for (const rule of sorts) {
-          const valA = a?.[rule.key];
-          const valB = b?.[rule.key];
-          if (valA === valB) continue;
-          if (valA === undefined || valA === null) return 1;
-          if (valB === undefined || valB === null) return -1;
-
-          let cmp = 0;
-          if (typeof valA === 'number' && typeof valB === 'number') {
-            cmp = valA - valB;
-          } else if (typeof valA === 'boolean' && typeof valB === 'boolean') {
-            cmp = valA === valB ? 0 : valA ? 1 : -1;
-          } else {
-            cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
-          }
-
-          if (cmp !== 0) {
-            return rule.dir === 'asc' ? cmp : -cmp;
-          }
-        }
-        return 0;
-      });
-    }
-
-    return result;
-  }
-
-  // 데이터 변경 시 content 업데이트
+  /**
+   * 데이터 정렬 및 필터 변경 사항 반영 및 content 동기화.
+   */
   function updateProcessedContent() {
     uniqueValuesCache.clear();
     if (Array.isArray(rawData)) {
@@ -247,8 +135,12 @@
     }
   }
 
+  /**
+   * 지정한 ID의 샘플 데이터 세트를 불러옴.
+   * @param {string} presetId - 샘플 데이터 프리셋 식별자
+   */
   function loadSamplePreset(presetId) {
-    const preset = samplePresets.find(p => p.id === presetId);
+    const preset = SAMPLE_PRESETS.find((p) => p.id === presetId);
     if (preset) {
       rawData = preset.data;
       sortRules = [];
@@ -259,13 +151,21 @@
     }
   }
 
+  /**
+   * 파일 선택 다이얼로그를 호출함.
+   */
   function triggerFileUpload() {
     if (fileInput) fileInput.click();
   }
 
+  /**
+   * 입력된 텍스트 데이터를 JSON 파싱 또는 LLM JSON 수리 처리하여 에디터에 로드함.
+   * @param {string} text - 원본 데이터 텍스트
+   * @param {string} [fileName=''] - 파일 이름
+   */
   function handleFileContent(text, fileName = '') {
     try {
-      // 1. 일반 JSON 파싱 시도
+      // 1. 표준 JSON 파싱 시도
       try {
         const parsed = JSON.parse(text);
         rawData = parsed;
@@ -275,7 +175,7 @@
         content = { json: parsed };
         showToast(`파일 로드 완료: ${fileName || 'JSON Data'}`);
       } catch (jsonErr) {
-        // 2. LLM JSON Repair 복구 시도
+        // 2. 파싱 실패 시 LLM JSON 수리 유틸리티로 자동 복구 시도
         const repairedText = repairJsonString(text);
         const parsed = JSON.parse(repairedText);
         rawData = parsed;
@@ -291,6 +191,10 @@
     }
   }
 
+  /**
+   * input file 이벤트 처리.
+   * @param {Event} event - change 이벤트 객체
+   */
   function handleFileUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -303,7 +207,10 @@
     event.target.value = '';
   }
 
-  // 전체 화면 드래그 앤 드롭 파일 로더
+  /**
+   * 창 전체 영역 파일 드래그 앤 드롭 이벤트를 바인딩함.
+   * @returns {Function} 이벤트 해제 클린업 함수
+   */
   function setupDragAndDrop() {
     const handleDragOver = (e) => {
       e.preventDefault();
@@ -347,7 +254,11 @@
     };
   }
 
-  // --- 빠른 복사 및 LLM 툴바 기능 ---
+  // ---------------------------------------------------------------------------
+  // [빠른 클립보드 복사 & LLM 액션]
+  // ---------------------------------------------------------------------------
+
+  /** Formatted JSON 클립보드 복사 */
   function handleCopyFormatted() {
     const targetData = content?.json !== undefined ? content.json : content?.text;
     const str = typeof targetData === 'string' ? targetData : JSON.stringify(targetData, null, 2);
@@ -355,6 +266,7 @@
     showToast('Formatted JSON 클립보드 복사 완료');
   }
 
+  /** Minified JSON 클립보드 복사 */
   function handleCopyMinified() {
     const targetData = content?.json !== undefined ? content.json : content?.text;
     const str = typeof targetData === 'string' ? targetData : JSON.stringify(targetData);
@@ -362,6 +274,7 @@
     showToast('Minified JSON 클립보드 복사 완료');
   }
 
+  /** LLM Prompt 전용 Escaped JSON 복사 */
   function handleCopyLlmEscaped() {
     const targetData = content?.json !== undefined ? content.json : content?.text;
     const str = escapeJsonString(targetData);
@@ -369,6 +282,7 @@
     showToast('LLM Prompt용 Escaped JSON 복사 완료');
   }
 
+  /** 에디터 내 텍스트 수동 JSON 자동 복구 실행 */
   function handleRepairJsonAction() {
     if (content?.text) {
       try {
@@ -385,6 +299,11 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // [스타일, 폰트 및 테마 설정]
+  // ---------------------------------------------------------------------------
+
+  /** CSS 변수에 폰트 크기 반영 및 로컬 스토리지 저장 */
   function applyFontSize() {
     document.documentElement.style.setProperty('--app-font-size', `${fontSize}px`);
     document.documentElement.style.setProperty('--jse-font-size', `${fontSize}px`);
@@ -396,6 +315,7 @@
     }
   }
 
+  /** CSS 변수에 행 높이 반영 및 로컬 스토리지 저장 */
   function applyRowHeight() {
     document.documentElement.style.setProperty('--app-row-height', rowHeight);
     try {
@@ -405,6 +325,7 @@
     }
   }
 
+  /** 테마 속성 적용 및 로컬 스토리지 저장 */
   function applyTheme() {
     if (theme === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
@@ -420,11 +341,13 @@
     }
   }
 
+  /** 라이트/다크 테마 토글 */
   function toggleTheme() {
     theme = theme === 'light' ? 'dark' : 'light';
     applyTheme();
   }
 
+  /** 저장된 테마 설정 로드 */
   function loadTheme() {
     try {
       const saved = localStorage.getItem('imjson_theme');
@@ -436,12 +359,13 @@
     }
   }
 
+  /** 저장된 폰트 크기 로드 */
   function loadFontSize() {
     try {
       const saved = localStorage.getItem('imjson_font_size') || localStorage.getItem('imbank_font_size');
       if (saved) {
         const parsed = parseInt(saved, 10);
-        if (!isNaN(parsed) && fontSizes.includes(parsed)) {
+        if (!isNaN(parsed) && FONT_SIZES.includes(parsed)) {
           fontSize = parsed;
         }
       }
@@ -450,10 +374,11 @@
     }
   }
 
+  /** 저장된 행 높이 로드 */
   function loadRowHeight() {
     try {
       const saved = localStorage.getItem('imjson_row_height');
-      if (saved && rowHeights.some(r => r.value === saved)) {
+      if (saved && ROW_HEIGHTS.some((r) => r.value === saved)) {
         rowHeight = saved;
       }
     } catch (err) {
@@ -461,22 +386,25 @@
     }
   }
 
+  /** 폰트 크기 감소 */
   function decreaseFontSize() {
-    const currentIndex = fontSizes.indexOf(fontSize);
+    const currentIndex = FONT_SIZES.indexOf(fontSize);
     if (currentIndex > 0) {
-      fontSize = fontSizes[currentIndex - 1];
+      fontSize = FONT_SIZES[currentIndex - 1];
       applyFontSize();
     }
   }
 
+  /** 폰트 크기 증가 */
   function increaseFontSize() {
-    const currentIndex = fontSizes.indexOf(fontSize);
-    if (currentIndex < fontSizes.length - 1) {
-      fontSize = fontSizes[currentIndex + 1];
+    const currentIndex = FONT_SIZES.indexOf(fontSize);
+    if (currentIndex < FONT_SIZES.length - 1) {
+      fontSize = FONT_SIZES[currentIndex + 1];
       applyFontSize();
     }
   }
 
+  /** 폰트 크기 셀렉트 변경 처리 */
   function handleFontSizeSelect(e) {
     const val = parseInt(e.target.value, 10);
     if (!isNaN(val)) {
@@ -485,11 +413,13 @@
     }
   }
 
+  /** 행 높이 셀렉트 변경 처리 */
   function handleRowHeightSelect(e) {
     rowHeight = e.target.value;
     applyRowHeight();
   }
 
+  /** svelte-jsoneditor 내부 툴바 슬롯 영역에 커스텀 컨트롤 부착 */
   function attachFontSizeControl() {
     if (!toolbarControlsEl) return;
     const placeholder = document.querySelector('.jse-font-size-slot-placeholder');
@@ -501,6 +431,9 @@
     }
   }
 
+  /**
+   * svelte-jsoneditor 툴바 항목 커스터마이징 렌더러.
+   */
   function handleRenderMenu(items, context) {
     const translatedItems = onRenderMenu(items, context) || items;
 
@@ -567,40 +500,45 @@
     ];
   }
 
+  /** 설정된 폰트 CSS 변수 적용 및 로컬 스토리지 저장 */
   function applyFonts() {
     let uiFontCSS = '';
     if (selectedUiFontMode === 'custom') {
       const font = customUiFont.trim();
-      uiFontCSS = font ? `'${font}', -apple-system, BlinkMacSystemFont, system-ui, sans-serif` : presetUiFonts[0].value;
+      uiFontCSS = font ? `'${font}', -apple-system, BlinkMacSystemFont, system-ui, sans-serif` : PRESET_UI_FONTS[0].value;
     } else if (selectedUiFontMode === 'system') {
-      uiFontCSS = selectedUiFontValue ? `'${selectedUiFontValue}', -apple-system, BlinkMacSystemFont, system-ui, sans-serif` : presetUiFonts[0].value;
+      uiFontCSS = selectedUiFontValue ? `'${selectedUiFontValue}', -apple-system, BlinkMacSystemFont, system-ui, sans-serif` : PRESET_UI_FONTS[0].value;
     } else {
-      uiFontCSS = selectedUiFontValue || presetUiFonts[0].value;
+      uiFontCSS = selectedUiFontValue || PRESET_UI_FONTS[0].value;
     }
 
     let codeFontCSS = '';
     if (selectedCodeFontMode === 'custom') {
       const font = customCodeFont.trim();
-      codeFontCSS = font ? `'${font}', Consolas, monospace` : presetCodeFonts[0].value;
+      codeFontCSS = font ? `'${font}', Consolas, monospace` : PRESET_CODE_FONTS[0].value;
     } else if (selectedCodeFontMode === 'system') {
-      codeFontCSS = selectedCodeFontValue ? `'${selectedCodeFontValue}', Consolas, monospace` : presetCodeFonts[0].value;
+      codeFontCSS = selectedCodeFontValue ? `'${selectedCodeFontValue}', Consolas, monospace` : PRESET_CODE_FONTS[0].value;
     } else {
-      codeFontCSS = selectedCodeFontValue || presetCodeFonts[0].value;
+      codeFontCSS = selectedCodeFontValue || PRESET_CODE_FONTS[0].value;
     }
 
     document.documentElement.style.setProperty('--app-font-ui', uiFontCSS);
     document.documentElement.style.setProperty('--app-font-code', codeFontCSS);
 
-    localStorage.setItem('imjson_font_settings', JSON.stringify({
-      selectedUiFontMode,
-      selectedUiFontValue,
-      customUiFont,
-      selectedCodeFontMode,
-      selectedCodeFontValue,
-      customCodeFont
-    }));
+    localStorage.setItem(
+      'imjson_font_settings',
+      JSON.stringify({
+        selectedUiFontMode,
+        selectedUiFontValue,
+        customUiFont,
+        selectedCodeFontMode,
+        selectedCodeFontValue,
+        customCodeFont
+      })
+    );
   }
 
+  /** 시스템 로컬 폰트 열람 (Chromium queryLocalFonts API 지원) */
   async function loadSystemFonts() {
     try {
       if ('queryLocalFonts' in window) {
@@ -615,6 +553,7 @@
     }
   }
 
+  /** 저장된 폰트 설정 로드 */
   function loadFontSettings() {
     try {
       const saved = localStorage.getItem('imjson_font_settings') || localStorage.getItem('imbank_font_settings');
@@ -632,7 +571,15 @@
     }
   }
 
-  // Memoization 기반 유니크 컬럼 값 추출
+  // ---------------------------------------------------------------------------
+  // [엑셀 스타일 필터 & 정렬 UI 로직]
+  // ---------------------------------------------------------------------------
+
+  /**
+   * 컬럼별 유니크 고유 값 추출 (메모이제이션 캐시 사용).
+   * @param {string} colKey - 컬럼 키 명칭
+   * @returns {string[]} 정렬된 고유 값 목록
+   */
   function getUniqueValuesForColumn(colKey) {
     if (!Array.isArray(rawData)) return [];
     if (uniqueValuesCache.has(colKey)) {
@@ -650,6 +597,7 @@
     return sorted;
   }
 
+  /** 테이블 헤더 정렬/필터 드롭다운 팝업 열기 */
   function openHeaderMenu(colKey, targetEl) {
     const rect = targetEl.getBoundingClientRect();
     activeMenuCol = colKey;
@@ -667,19 +615,21 @@
     }
   }
 
+  /** 테이블 헤더 드롭다운 팝업 닫기 */
   function closeHeaderMenu() {
     activeMenuCol = null;
   }
 
-  // 정렬 핸들러
+  /** 단일 정렬 처리 */
   function handleSingleSort(colKey, dir) {
     sortRules = [{ key: colKey, dir }];
     updateProcessedContent();
     closeHeaderMenu();
   }
 
+  /** 다중 정렬 규칙 추가 처리 */
   function handleAddMultiSort(colKey, dir) {
-    const existingIdx = sortRules.findIndex(r => r.key === colKey);
+    const existingIdx = sortRules.findIndex((r) => r.key === colKey);
     if (existingIdx >= 0) {
       sortRules[existingIdx].dir = dir;
     } else {
@@ -689,12 +639,14 @@
     closeHeaderMenu();
   }
 
+  /** 단일 컬럼 정렬 해제 */
   function handleClearSort(colKey) {
-    sortRules = sortRules.filter(r => r.key !== colKey);
+    sortRules = sortRules.filter((r) => r.key !== colKey);
     updateProcessedContent();
     closeHeaderMenu();
   }
 
+  /** 모든 정렬 및 필터 초기화 */
   function handleClearAllSortAndFilter() {
     sortRules = [];
     filterRules = {};
@@ -702,7 +654,7 @@
     closeHeaderMenu();
   }
 
-  // 필터 핸들러
+  /** 필터 팝업 내 전체 값 선택/해제 토글 */
   function toggleSelectAllValues(colKey) {
     const allVals = getUniqueValuesForColumn(colKey);
     if (tempSelectedValues.size === allVals.length) {
@@ -712,6 +664,7 @@
     }
   }
 
+  /** 개별 값 선택/해제 토글 */
   function toggleValueSelection(val) {
     const next = new Set(tempSelectedValues);
     if (next.has(val)) {
@@ -722,6 +675,7 @@
     tempSelectedValues = next;
   }
 
+  /** 선택한 값 필터 규칙 적용 */
   function applyColumnFilter(colKey) {
     const allVals = getUniqueValuesForColumn(colKey);
     if (tempSelectedValues.size === allVals.length) {
@@ -737,6 +691,7 @@
     closeHeaderMenu();
   }
 
+  /** 단일 컬럼 필터 해제 */
   function clearColumnFilter(colKey) {
     delete filterRules[colKey];
     filterRules = { ...filterRules };
@@ -744,10 +699,14 @@
     closeHeaderMenu();
   }
 
-  // DOM mutation observer for table header decorator (최적화: MutationObserver + requestAnimationFrame)
+  // ---------------------------------------------------------------------------
+  // [DOM Observer: 테이블 헤더 엑셀 버튼 데코레이터]
+  // ---------------------------------------------------------------------------
+
   let headerObserver;
   let rafHeaderId;
 
+  /** 테이블 모드 렌더링 헤더에 정렬/필터 트리거 버튼을 삽입 */
   function decorateTableHeaders() {
     if (mode !== Mode.table) return;
     const thEls = document.querySelectorAll('.jse-table-mode table th:not(.jse-table-cell-gutter)');
@@ -770,7 +729,7 @@
         th.appendChild(btn);
       }
 
-      const sortIdx = sortRules.findIndex(r => r.key === colName);
+      const sortIdx = sortRules.findIndex((r) => r.key === colName);
       let sortBadge = '';
       if (sortIdx >= 0) {
         const rule = sortRules[sortIdx];
@@ -789,6 +748,7 @@
     });
   }
 
+  /** MutationObserver와 requestAnimationFrame을 이용한 테이블 헤더 감지기 설정 */
   function setupHeaderObserver() {
     const scheduleDecorate = () => {
       if (rafHeaderId) cancelAnimationFrame(rafHeaderId);
@@ -810,7 +770,11 @@
     };
   }
 
-  // 특정 셀 활성화 및 편집 모드 트리거 지원 함수
+  // ---------------------------------------------------------------------------
+  // [구글 스프레드시트/엑셀 UX: 클릭 및 키보드 탐색 인터랙션]
+  // ---------------------------------------------------------------------------
+
+  /** 지정한 좌표 (행, 열)의 셀을 활성화하고 편집 상태로 전환 */
   function activateCellAt(rowIndex, colIndex) {
     const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
     if (rowIndex < 0 || rowIndex >= rows.length) return;
@@ -831,7 +795,7 @@
     }
   }
 
-  // --- 구글 스프레드시트 UX: 단일 클릭 편집, 전체 선택, Tab/방향키 이동 ---
+  /** 단일 클릭 편집, 전체 선택, Tab/방향키 셀 이동 스프레드시트 UX 감지기 이벤트 핸들러 바인딩 */
   function setupSpreadsheetUX() {
     const handleGlobalClick = (e) => {
       const target = e.target;
@@ -951,6 +915,10 @@
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // [컴포넌트 생명주기 (Life Cycle)]
+  // ---------------------------------------------------------------------------
+
   onMount(() => {
     loadFontSettings();
     loadFontSize();
@@ -979,6 +947,7 @@
     };
   });
 
+  /** 에디터 모드 변경 처리 */
   function handleModeChange(newMode) {
     mode = newMode;
     setTimeout(() => {
@@ -987,6 +956,7 @@
     }, 50);
   }
 
+  /** 에디터 내부 데이터 내용 변경 처리 */
   function handleContentChange(newContent) {
     uniqueValuesCache.clear();
     if (newContent && newContent.json) {
@@ -1030,7 +1000,7 @@
         title="테스트용 샘플 데이터 세트 불러오기"
       >
         <option value="" disabled selected>샘플 선택</option>
-        {#each samplePresets as preset}
+        {#each SAMPLE_PRESETS as preset}
           <option value={preset.id}>{preset.name}</option>
         {/each}
       </select>
@@ -1043,7 +1013,7 @@
         type="button"
         class="jse-font-size-btn"
         onclick={decreaseFontSize}
-        disabled={fontSize <= fontSizes[0]}
+        disabled={fontSize <= FONT_SIZES[0]}
         title="폰트 크기 작게 (A-)"
       >
         A-
@@ -1054,7 +1024,7 @@
         onchange={handleFontSizeSelect}
         title="폰트 크기 선택"
       >
-        {#each fontSizes as size}
+        {#each FONT_SIZES as size}
           <option value={size}>{size}px</option>
         {/each}
       </select>
@@ -1062,7 +1032,7 @@
         type="button"
         class="jse-font-size-btn"
         onclick={increaseFontSize}
-        disabled={fontSize >= fontSizes[fontSizes.length - 1]}
+        disabled={fontSize >= FONT_SIZES[FONT_SIZES.length - 1]}
         title="폰트 크기 크게 (A+)"
       >
         A+
@@ -1078,7 +1048,7 @@
         onchange={handleRowHeightSelect}
         title="행 높이 선택"
       >
-        {#each rowHeights as rh}
+        {#each ROW_HEIGHTS as rh}
           <option value={rh.value}>{rh.label}</option>
         {/each}
       </select>
@@ -1183,7 +1153,7 @@
 
             {#if selectedUiFontMode === 'preset'}
               <select bind:value={selectedUiFontValue} onchange={applyFonts} class="font-select">
-                {#each presetUiFonts as font}
+                {#each PRESET_UI_FONTS as font}
                   <option value={font.value}>{font.label}</option>
                 {/each}
               </select>
@@ -1225,7 +1195,7 @@
 
             {#if selectedCodeFontMode === 'preset'}
               <select bind:value={selectedCodeFontValue} onchange={applyFonts} class="font-select">
-                {#each presetCodeFonts as font}
+                {#each PRESET_CODE_FONTS as font}
                   <option value={font.value}>{font.label}</option>
                 {/each}
               </select>
@@ -1379,7 +1349,7 @@
           <button class="menu-action-btn highlight" onclick={() => handleAddMultiSort(activeMenuCol, 'desc')}>
             <span class="icon">➕</span> 다중 정렬 추가 (내림차순)
           </button>
-          {#if sortRules.some(r => r.key === activeMenuCol)}
+          {#if sortRules.some((r) => r.key === activeMenuCol)}
             <button class="menu-action-btn danger" onclick={() => handleClearSort(activeMenuCol)}>
               <span class="icon">❌</span> 이 열 정렬 해제
             </button>
@@ -1399,7 +1369,7 @@
           />
 
           {#key activeMenuCol}
-            {@const uniqueVals = getUniqueValuesForColumn(activeMenuCol).filter(v => v.toLowerCase().includes(filterSearchQuery.toLowerCase()))}
+            {@const uniqueVals = getUniqueValuesForColumn(activeMenuCol).filter((v) => v.toLowerCase().includes(filterSearchQuery.toLowerCase()))}
             <div class="value-list-container">
               <label class="value-item select-all">
                 <input

@@ -1,21 +1,37 @@
-// Korean and English translation mapping and i18n helpers for JSON Editor Pro
-// Non-English and non-Korean language packs are excluded. Default language is Korean ('ko').
+/**
+ * @file i18n.js
+ * @description svelte-jsoneditor 도구 상자의 메뉴 및 컨텍스트 메뉴, DOM 요소 한글 번역 모듈.
+ * 기본 지원 언어는 한국어('ko')이며, 영문 원형 유지를 권장하는 기술 용어는 원어 그대로 보존함.
+ */
 
+/** 기본 설정 언어 */
 export const DEFAULT_LANGUAGE = 'ko';
+
+/** 지원 언어 목록 */
 export const SUPPORTED_LANGUAGES = ['ko', 'en'];
 
+/** 현재 설정된 언어 상태 */
 let currentLanguage = DEFAULT_LANGUAGE;
 
+/**
+ * 현재 설정된 언어를 반환.
+ * @returns {string} 현재 언어 코드 ('ko' | 'en')
+ */
 export function getCurrentLanguage() {
   return currentLanguage;
 }
 
+/**
+ * 활성 언어를 변경.
+ * @param {string} lang - 변경할 언어 코드
+ */
 export function setLanguage(lang) {
   if (SUPPORTED_LANGUAGES.includes(lang)) {
     currentLanguage = lang;
   }
 }
 
+/** 메인 툴바 메뉴 매핑 테이블 */
 const menuTitleMap = {
   'Expand all': '전체 펼치기',
   'Collapse all': '전체 접기',
@@ -31,6 +47,7 @@ const menuTitleMap = {
   'Open context menu': 'Context Menu 열기'
 };
 
+/** 컨텍스트 메뉴 라벨 매핑 테이블 */
 const contextTextMap = {
   'Edit key': 'Key 편집',
   'Edit array': 'Array 편집',
@@ -65,6 +82,7 @@ const contextTextMap = {
   'Table row:': 'Table 행:'
 };
 
+/** 컨텍스트 메뉴 툴팁 매핑 테이블 */
 const contextTitleMap = {
   'Edit the key (Double-click on the key)': 'Key 편집 (Double-click)',
   'Edit the value (Double-click on the value)': 'Value 편집 (Double-click)',
@@ -88,6 +106,11 @@ const contextTitleMap = {
   'Remove current row': '현재 Row 삭제'
 };
 
+/**
+ * 툴바 메뉴 타이틀 텍스트 한국어 변환.
+ * @param {string} title - 원본 영문 타이틀
+ * @returns {string} 번역된 타이틀
+ */
 function translateMenuTitle(title) {
   if (!title) return title;
   if (currentLanguage !== 'ko') return title;
@@ -112,6 +135,11 @@ function translateMenuTitle(title) {
   return title;
 }
 
+/**
+ * 컨텍스트 메뉴 툴팁 텍스트 한국어 변환.
+ * @param {string} title - 원본 영문 툴팁
+ * @returns {string} 번역된 툴팁
+ */
 function translateContextTitle(title) {
   if (!title) return title;
   if (currentLanguage !== 'ko') return title;
@@ -133,6 +161,14 @@ function translateContextTitle(title) {
   return title;
 }
 
+/**
+ * svelte-jsoneditor onRenderMenu 렌더링 훅.
+ * 툴바 항목의 툴팁 및 라벨을 번역함.
+ *
+ * @param {Array<object>} items - 툴바 아이템 목록
+ * @param {object} context - 에디터 컨텍스트
+ * @returns {Array<object>} 번역이 적용된 아이템 목록
+ */
 export function onRenderMenu(items, context) {
   if (!Array.isArray(items)) return items;
 
@@ -155,6 +191,14 @@ export function onRenderMenu(items, context) {
   return items.map(processItem);
 }
 
+/**
+ * svelte-jsoneditor onRenderContextMenu 렌더링 훅.
+ * 마우스 우클릭 및 키보드 컨텍스트 메뉴 텍스트 및 툴팁을 번역함.
+ *
+ * @param {Array<object>} items - 컨텍스트 메뉴 아이템 목록
+ * @param {object} context - 에디터 컨텍스트
+ * @returns {Array<object>} 번역이 적용된 아이템 목록
+ */
 export function onRenderContextMenu(items, context) {
   if (!Array.isArray(items)) return items;
 
@@ -185,14 +229,18 @@ export function onRenderContextMenu(items, context) {
   return items.map(processItem);
 }
 
-// DOM Translation observer for elements like SearchBox, NavigationBar, Welcome screen, Node tooltips, Modals, Statusbar
+/**
+ * 동적 DOM 요소(검색창, 경로 탐색 바, 인라인 모달 등) 한글화를 위한 MutationObserver 감지기 설정.
+ *
+ * @returns {Function} Observer 연결 해제 클린업 함수
+ */
 export function setupI18nObserver() {
   if (typeof document === 'undefined') return () => {};
 
   function translateDOM() {
     if (currentLanguage !== 'ko') return;
 
-    // 1. SearchBox elements
+    // 1. 검색 요소 (SearchBox)
     const searchInputs = document.querySelectorAll('.jse-search-input');
     searchInputs.forEach((input) => {
       if (input.placeholder === 'Find') input.placeholder = 'Search';
@@ -244,7 +292,7 @@ export function setupI18nObserver() {
       }
     });
 
-    // 2. NavigationBar
+    // 2. 경로 탐색 바 (NavigationBar)
     const pathBtns = document.querySelectorAll('.jse-navigation-bar button.jse-path');
     pathBtns.forEach((btn) => {
       if (btn.title === 'Edit the selected path') {
@@ -261,7 +309,7 @@ export function setupI18nObserver() {
       }
     });
 
-    // 3. Welcome Screen
+    // 3. 빈 문서 시작 화면 (Welcome Screen)
     const welcomeTitle = document.querySelector('.jse-welcome-title');
     if (welcomeTitle && welcomeTitle.textContent === 'Empty document') {
       welcomeTitle.textContent = 'Empty document';
@@ -283,7 +331,7 @@ export function setupI18nObserver() {
       }
     });
 
-    // 4. Tree Node Tooltips & Buttons
+    // 4. 트리 노드 툴팁 및 버튼 (Tree Node Tooltips)
     const expandArrayBtns = document.querySelectorAll('[title*="Expand or collapse this array"]');
     expandArrayBtns.forEach((btn) => {
       btn.title = 'Array 펼치기/접기 (Ctrl+클릭으로 하위 항목 포함 전체 펼치기/접기)';
@@ -309,7 +357,7 @@ export function setupI18nObserver() {
       btn.title = '새 항목 삽입';
     });
 
-    // 5. Modals (Sort / Transform)
+    // 5. 모달 영역 (Sort / Transform)
     const modalHeaderTitle = document.querySelector('.jse-modal .jse-header-title, .jse-sort-modal .jse-title');
     if (modalHeaderTitle) {
       if (modalHeaderTitle.textContent.trim() === 'Sort array items') {
@@ -355,7 +403,7 @@ export function setupI18nObserver() {
       if (text === 'Preview') label.textContent = 'Preview';
     });
 
-    // 6. Table Mode UI
+    // 6. 테이블 모드 UI (Table Mode)
     const sortColAscBtns = document.querySelectorAll('[title="Sort column ascending"]');
     sortColAscBtns.forEach((btn) => {
       btn.title = '열 오름차순 Sort';
@@ -376,7 +424,7 @@ export function setupI18nObserver() {
       btn.title = '숨겨진 열 표시';
     });
 
-    // 7. Additional menu buttons and tooltips in editor toolbar
+    // 7. 툴바 버튼 툴팁 번역 (Toolbar Buttons)
     const menuButtons = document.querySelectorAll('.jse-menu button');
     menuButtons.forEach((btn) => {
       const title = btn.getAttribute('title');
@@ -391,10 +439,10 @@ export function setupI18nObserver() {
     });
   }
 
-  // Initial translation
+  // 초기 렌더링 시 번역 적용
   translateDOM();
 
-  // Observer for dynamic element updates with requestAnimationFrame debouncing
+  // DOM 변화 감지 디바운싱 처리
   let observer;
   let rafId = null;
 
