@@ -112,7 +112,7 @@ pre,
   cursor: default !important;
 }
 
-/* 커스텀 상단 버튼 (파일 열기, 폰트 설정) */
+/* 커스텀 상단 버튼 (파일 열기, 폰트 설정, LLM 도구) */
 .editor-container .jse-custom-btn {
   width: auto !important;
   padding: 0 10px !important;
@@ -128,6 +128,17 @@ pre,
 .editor-container .jse-custom-btn:hover {
   background: rgba(56, 189, 248, 0.2) !important;
   border-color: rgba(56, 189, 248, 0.4) !important;
+  color: #ffffff !important;
+}
+
+.editor-container .jse-custom-btn.jse-llm-btn {
+  background: rgba(14, 165, 233, 0.2) !important;
+  border-color: #0284c7 !important;
+  color: #38bdf8 !important;
+}
+
+.editor-container .jse-custom-btn.jse-llm-btn:hover {
+  background: rgba(14, 165, 233, 0.35) !important;
   color: #ffffff !important;
 }
 
@@ -173,7 +184,7 @@ pre,
   margin: 0 6px !important;
 }
 
-/* 툴바 커스텀 컨트롤 그룹 (폰트 크기, 행높이, 테마 토글) */
+/* 툴바 커스텀 컨트롤 그룹 (폰트 크기, 행높이, 테마 토글, 칩) */
 .jse-toolbar-controls {
   display: inline-flex;
   align-items: center;
@@ -182,6 +193,7 @@ pre,
 
 .jse-font-size-group,
 .jse-row-height-group,
+.jse-sample-group,
 .jse-theme-group {
   display: inline-flex;
   align-items: center;
@@ -191,6 +203,56 @@ pre,
   border-radius: 6px;
   padding: 2px 6px;
   height: 34px;
+}
+
+.jse-quick-action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.jse-action-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 8px;
+  height: 30px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: all 0.15s ease-in-out;
+}
+
+.jse-action-chip:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.jse-action-chip.highlight-chip {
+  background: rgba(14, 165, 233, 0.15);
+  border-color: #0284c7;
+  color: #38bdf8;
+}
+
+.jse-action-chip.highlight-chip:hover {
+  background: rgba(14, 165, 233, 0.3);
+  color: #ffffff;
+}
+
+.jse-action-chip.repair-chip {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.jse-action-chip.repair-chip:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #ffffff;
 }
 
 .jse-theme-toggle-btn {
