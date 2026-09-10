@@ -4,6 +4,28 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   base: './',
+  esbuild: {
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : []
+  },
+  build: {
+    target: 'es2022',
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('svelte-jsoneditor')) {
+            return 'vendor-jsoneditor';
+          }
+          if (id.includes('node_modules/svelte')) {
+            return 'vendor-svelte';
+          }
+          if (id.includes('node_modules/zod') || id.includes('node_modules/clsx')) {
+            return 'vendor-utils';
+          }
+        }
+      }
+    }
+  },
   plugins: [
     svelte(),
     VitePWA({
