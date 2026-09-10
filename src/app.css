@@ -65,55 +65,168 @@ pre,
 }
 
 /* ==========================================================================
-   현대적인 Dark Slate 툴바 (Modern Toolbar Redesign)
+   테마 반응형 툴바 스타일 (Theme-Aware Toolbar Styling)
    ========================================================================== */
+
+/* 1) 공통 툴바 레이아웃 */
 .jse-menu {
-  background: #0f172a !important; /* Modern Slate 900 */
-  border-bottom: 1px solid #1e293b !important;
   min-height: 50px !important;
   padding: 6px 12px !important;
   display: flex !important;
   align-items: center !important;
   gap: 4px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease !important;
 }
 
-/* 버튼 기본 스타일 현대화 */
-.jse-menu button,
-.jse-menu .jse-button {
+/* 2) 라이트 테마 툴바 */
+:root:not([data-theme="dark"]) .jse-menu {
+  background: #f1f5f9 !important; /* Slate 100 */
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+:root:not([data-theme="dark"]) .jse-menu button,
+:root:not([data-theme="dark"]) .jse-menu .jse-button {
   min-width: 34px !important;
   height: 34px !important;
   font-size: 13px !important;
   border-radius: 6px !important;
-  transition: all 0.15s ease-in-out !important;
-  color: #cbd5e1 !important; /* Slate 300 */
+  color: #334155 !important;
   background: transparent !important;
   border: 1px solid transparent !important;
 }
 
-.jse-menu button:hover:not(:disabled),
-.jse-menu .jse-button:hover:not(:disabled) {
+:root:not([data-theme="dark"]) .jse-menu button:hover:not(:disabled),
+:root:not([data-theme="dark"]) .jse-menu .jse-button:hover:not(:disabled) {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:root:not([data-theme="dark"]) .editor-container .jse-custom-btn {
+  width: auto !important;
+  padding: 0 10px !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  border-radius: 6px !important;
+}
+
+:root:not([data-theme="dark"]) .editor-container .jse-custom-btn:hover {
+  background: #e0f2fe !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+}
+
+:root:not([data-theme="dark"]) .jse-menu .jse-button.jse-group-button {
+  width: auto !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  margin: 0 !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+:root:not([data-theme="dark"]) .jse-menu .jse-button.jse-group-button.jse-selected {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3) !important;
+}
+
+:root:not([data-theme="dark"]) .jse-menu .jse-separator {
+  background: #cbd5e1 !important;
+  width: 1px !important;
+  height: 22px !important;
+  margin: 0 6px !important;
+}
+
+:root:not([data-theme="dark"]) .jse-font-size-group,
+:root:not([data-theme="dark"]) .jse-row-height-group,
+:root:not([data-theme="dark"]) .jse-sample-group,
+:root:not([data-theme="dark"]) .jse-theme-group {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+:root:not([data-theme="dark"]) .jse-control-label {
+  color: #475569;
+}
+
+:root:not([data-theme="dark"]) .jse-font-size-btn,
+:root:not([data-theme="dark"]) .jse-theme-toggle-btn {
+  color: #0f172a;
+}
+
+:root:not([data-theme="dark"]) .jse-font-size-btn:hover:not(:disabled),
+:root:not([data-theme="dark"]) .jse-theme-toggle-btn:hover {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+:root:not([data-theme="dark"]) .jse-font-size-select {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
+:root:not([data-theme="dark"]) .jse-font-size-select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+:root:not([data-theme="dark"]) .jse-action-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+:root:not([data-theme="dark"]) .jse-action-chip:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+:root:not([data-theme="dark"]) .jse-action-chip.repair-chip {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+:root:not([data-theme="dark"]) .jse-action-chip.repair-chip:hover {
+  background: #fee2e2;
+}
+
+/* 3) 다크 테마 툴바 */
+[data-theme="dark"] .jse-menu {
+  background: #0f172a !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+[data-theme="dark"] .jse-menu button,
+[data-theme="dark"] .jse-menu .jse-button {
+  min-width: 34px !important;
+  height: 34px !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  color: #cbd5e1 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+[data-theme="dark"] .jse-menu button:hover:not(:disabled),
+[data-theme="dark"] .jse-menu .jse-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
-/* 브랜딩 타이틀 */
-.editor-container .jse-brand-label {
-  width: auto !important;
-  font-weight: 800 !important;
-  font-size: 0.95rem !important;
-  padding: 0 10px !important;
-  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  letter-spacing: -0.02em;
-  user-select: none;
-  cursor: default !important;
-}
-
-/* 커스텀 상단 버튼 (파일 열기, 폰트 설정, LLM 도구) */
-.editor-container .jse-custom-btn {
+[data-theme="dark"] .editor-container .jse-custom-btn {
   width: auto !important;
   padding: 0 10px !important;
   font-size: 0.8125rem !important;
@@ -125,25 +238,13 @@ pre,
   border-radius: 6px !important;
 }
 
-.editor-container .jse-custom-btn:hover {
+[data-theme="dark"] .editor-container .jse-custom-btn:hover {
   background: rgba(56, 189, 248, 0.2) !important;
   border-color: rgba(56, 189, 248, 0.4) !important;
   color: #ffffff !important;
 }
 
-.editor-container .jse-custom-btn.jse-llm-btn {
-  background: rgba(14, 165, 233, 0.2) !important;
-  border-color: #0284c7 !important;
-  color: #38bdf8 !important;
-}
-
-.editor-container .jse-custom-btn.jse-llm-btn:hover {
-  background: rgba(14, 165, 233, 0.35) !important;
-  color: #ffffff !important;
-}
-
-/* 모드 전환 그룹 버튼 (Tree, Table, Code) */
-.jse-menu .jse-button.jse-group-button {
+[data-theme="dark"] .jse-menu .jse-button.jse-group-button {
   width: auto !important;
   height: 32px !important;
   padding: 0 12px !important;
@@ -153,6 +254,97 @@ pre,
   color: #94a3b8 !important;
   font-weight: 600 !important;
   font-size: 13px !important;
+}
+
+[data-theme="dark"] .jse-menu .jse-button.jse-group-button.jse-selected {
+  background: #0284c7 !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4) !important;
+}
+
+[data-theme="dark"] .jse-menu .jse-separator {
+  background: rgba(255, 255, 255, 0.12) !important;
+  width: 1px !important;
+  height: 22px !important;
+  margin: 0 6px !important;
+}
+
+[data-theme="dark"] .jse-font-size-group,
+[data-theme="dark"] .jse-row-height-group,
+[data-theme="dark"] .jse-sample-group,
+[data-theme="dark"] .jse-theme-group {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+
+[data-theme="dark"] .jse-control-label {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .jse-font-size-btn,
+[data-theme="dark"] .jse-theme-toggle-btn {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .jse-font-size-btn:hover:not(:disabled),
+[data-theme="dark"] .jse-theme-toggle-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .jse-font-size-select {
+  background: #1e293b;
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .jse-font-size-select option {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .jse-action-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .jse-action-chip:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .jse-action-chip.repair-chip {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .jse-action-chip.repair-chip:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #ffffff;
+}
+
+/* 브랜딩 타이틀 */
+.jse-menu .jse-brand-label,
+.jse-menu .jse-brand-label:hover,
+:root:not([data-theme="dark"]) .jse-menu .jse-brand-label,
+[data-theme="dark"] .jse-menu .jse-brand-label {
+  width: auto !important;
+  font-weight: 800 !important;
+  font-size: 1.05rem !important;
+  padding: 0 10px !important;
+  background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  letter-spacing: -0.02em !important;
+  user-select: none !important;
+  cursor: default !important;
+  border: none !important;
+  border-color: transparent !important;
+  opacity: 1 !important;
 }
 
 .jse-menu .jse-button.jse-group-button.jse-first {
@@ -169,22 +361,7 @@ pre,
   border-bottom-left-radius: 0 !important;
 }
 
-.jse-menu .jse-button.jse-group-button.jse-selected {
-  background: #0284c7 !important; /* Cyan 600 */
-  border-color: #38bdf8 !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4) !important;
-}
-
-/* 구분선 개편 */
-.jse-menu .jse-separator {
-  background: rgba(255, 255, 255, 0.12) !important;
-  width: 1px !important;
-  height: 22px !important;
-  margin: 0 6px !important;
-}
-
-/* 툴바 커스텀 컨트롤 그룹 (폰트 크기, 행높이, 테마 토글, 칩) */
+/* 툴바 커스텀 컨트롤 그룹 공통 구조 */
 .jse-toolbar-controls {
   display: inline-flex;
   align-items: center;
@@ -198,9 +375,6 @@ pre,
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
   padding: 2px 6px;
   height: 34px;
 }
@@ -212,9 +386,6 @@ pre,
 }
 
 .jse-action-chip {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
   font-size: 11px;
   font-weight: 600;
   padding: 0 8px;
@@ -227,38 +398,9 @@ pre,
   transition: all 0.15s ease-in-out;
 }
 
-.jse-action-chip:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
-.jse-action-chip.highlight-chip {
-  background: rgba(14, 165, 233, 0.15);
-  border-color: #0284c7;
-  color: #38bdf8;
-}
-
-.jse-action-chip.highlight-chip:hover {
-  background: rgba(14, 165, 233, 0.3);
-  color: #ffffff;
-}
-
-.jse-action-chip.repair-chip {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: #ef4444;
-  color: #fca5a5;
-}
-
-.jse-action-chip.repair-chip:hover {
-  background: rgba(239, 68, 68, 0.35);
-  color: #ffffff;
-}
-
 .jse-theme-toggle-btn {
   background: transparent;
   border: none;
-  color: #f1f5f9;
   font-size: 12px;
   font-weight: 700;
   padding: 0 6px;
@@ -271,13 +413,7 @@ pre,
   transition: all 0.15s ease-in-out;
 }
 
-.jse-theme-toggle-btn:hover {
-  background: rgba(56, 189, 248, 0.25);
-  color: #38bdf8;
-}
-
 .jse-control-label {
-  color: #cbd5e1;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -286,7 +422,6 @@ pre,
 .jse-font-size-btn {
   background: transparent;
   border: none;
-  color: #f1f5f9;
   font-weight: 700;
   font-size: 12px;
   padding: 0 8px;
@@ -299,20 +434,12 @@ pre,
   transition: all 0.15s ease-in-out;
 }
 
-.jse-font-size-btn:hover:not(:disabled) {
-  background: rgba(56, 189, 248, 0.25);
-  color: #38bdf8;
-}
-
 .jse-font-size-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
 .jse-font-size-select {
-  background: #1e293b;
-  color: #f8fafc;
-  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 4px;
   padding: 0 6px;
   height: 28px;
@@ -328,11 +455,6 @@ pre,
 .jse-font-size-select:hover {
   border-color: #38bdf8;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
-}
-
-.jse-font-size-select option {
-  background: #0f172a;
-  color: #f8fafc;
 }
 
 /* ==========================================================================
@@ -372,20 +494,27 @@ pre,
 .jse-main.jse-theme-dark .jse-table-mode .jse-table-main {
   border-collapse: collapse !important;
   border-spacing: 0 !important;
-  width: 100% !important;
+  width: max-content !important;
+  min-width: auto !important;
+  max-width: none !important;
   border: 1px solid var(--grid-border-color) !important;
 }
 
-/* 엑셀 헤더 스타일링 */
+.jse-table-mode {
+  overflow: auto !important;
+}
+
+/* 엑셀 헤더 및 리사이저 스타일링 */
 .jse-table-mode th,
 .jse-table-mode .jse-table-cell-header {
   background-color: var(--grid-header-bg) !important;
   color: var(--grid-header-color) !important;
   font-weight: 600 !important;
   border: 1px solid var(--grid-border-color) !important;
-  padding: 6px 10px !important;
+  padding: 4px 12px 4px 8px !important;
   position: relative !important;
   user-select: none !important;
+  white-space: nowrap !important;
 }
 
 .jse-table-mode th .jse-column-header {
@@ -395,9 +524,33 @@ pre,
   border: none !important;
   padding: 0 !important;
   display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
   width: 100% !important;
+  gap: 4px !important;
+}
+
+.jse-table-mode th .jse-column-name {
+  display: inline-block !important;
+  white-space: nowrap !important;
+}
+
+/* 마우스 구글 스프레드시트 컬럼 리사이저 핸들 패드 */
+.excel-col-resizer {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 6px !important;
+  height: 100% !important;
+  cursor: col-resize !important;
+  user-select: none !important;
+  z-index: 10 !important;
+}
+
+.excel-col-resizer:hover,
+.excel-col-resizer.resizing {
+  background-color: var(--grid-cell-active-border) !important;
 }
 
 /* 엑셀 행 번호 (Gutter) 스타일링 */

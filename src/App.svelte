@@ -16,10 +16,6 @@
   } from './constants/editor.js';
   import {
     repairJsonString,
-    escapeJsonString,
-    unescapeJsonString,
-    generateJsonSchema,
-    generateTypeScriptTypes,
     calculateDatasetMetrics
   } from './utils/llmUtils.js';
   import { getProcessedData } from './utils/tableUtils.js';
@@ -49,10 +45,8 @@
   /** 에디터 상단 커스텀 툴바 영역 Element 레퍼런스 */
   let toolbarControlsEl = $state();
 
-  /** 모달 표시 상태 및 LLM 툴박스 활성 탭 ('schema' | 'types' | 'escape') */
+  /** 모달 표시 상태 */
   let showFontModal = $state(false);
-  let showLlmToolModal = $state(false);
-  let activeLlmTab = $state('schema');
 
   // ---------------------------------------------------------------------------
   // [상태 관리: 드래그 앤 드롭 & 토스트 알림]
@@ -274,14 +268,6 @@
     showToast('Minified JSON 클립보드 복사 완료');
   }
 
-  /** LLM Prompt 전용 Escaped JSON 복사 */
-  function handleCopyLlmEscaped() {
-    const targetData = content?.json !== undefined ? content.json : content?.text;
-    const str = escapeJsonString(targetData);
-    navigator.clipboard.writeText(str);
-    showToast('LLM Prompt용 Escaped JSON 복사 완료');
-  }
-
   /** 에디터 내 텍스트 수동 JSON 자동 복구 실행 */
   function handleRepairJsonAction() {
     if (content?.text) {
@@ -452,16 +438,6 @@
       onClick: () => triggerFileUpload()
     };
 
-    const llmToolboxButton = {
-      type: 'button',
-      text: '🤖 LLM 도구',
-      title: 'LLM Schema / TypeScript Type / Prompt 변환 도구',
-      className: 'jse-custom-btn jse-llm-btn',
-      onClick: () => {
-        showLlmToolModal = true;
-      }
-    };
-
     const fontSettingsButton = {
       type: 'button',
       text: '폰트 설정',
@@ -491,7 +467,6 @@
       customBrandLabel,
       separator,
       openFileButton,
-      llmToolboxButton,
       fontSettingsButton,
       separator,
       fontControlSlotPlaceholder,
@@ -706,7 +681,7 @@
   let headerObserver;
   let rafHeaderId;
 
-  /** 테이블 모드 렌더링 헤더에 정렬/필터 트리거 버튼을 삽입 */
+  /** 테이블 모드 렌더링 헤더에 정렬/필터 트리거 버튼 및 리사이저 삽입 */
   function decorateTableHeaders() {
     if (mode !== Mode.table) return;
     const thEls = document.querySelectorAll('.jse-table-mode table th:not(.jse-table-cell-gutter)');
@@ -716,17 +691,40 @@
       if (colNameSpan) {
         colName = colNameSpan.textContent.trim();
       } else {
-        colName = th.textContent.replace(/[▲▼🔍0-9]/g, '').trim();
+        colName = Array.from(th.childNodes)
+          .filter((node) => node.nodeType === Node.TEXT_NODE || (node.classList && !node.classList.contains('excel-header-trigger') && !node.classList.contains('excel-col-resizer')))
+          .map((node) => node.textContent)
+          .join('')
+          .replace(/[▲▼🔍0-9]/g, '')
+          .trim();
       }
 
       if (!colName) return;
+
+      let headerInner = th.querySelector('.jse-column-header');
+      if (headerInner) {
+        headerInner.style.display = 'flex';
+        headerInner.style.flexDirection = 'row';
+        headerInner.style.alignItems = 'center';
+        headerInner.style.justifyContent = 'space-between';
+      } else {
+        headerInner = th;
+      }
+
+      // 기존 외부 정렬 화살표 요소가 숨겨지거나 깨지는 부분 정리
+      const nativeSort = th.querySelector('.jse-sort-arrow, .jse-context-menu-button');
+      if (nativeSort) {
+        nativeSort.style.display = 'none';
+      }
 
       let btn = th.querySelector('.excel-header-trigger');
       if (!btn) {
         btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'excel-header-trigger';
-        th.appendChild(btn);
+        headerInner.appendChild(btn);
+      } else if (btn.parentNode !== headerInner) {
+        headerInner.appendChild(btn);
       }
 
       const sortIdx = sortRules.findIndex((r) => r.key === colName);
@@ -741,10 +739,62 @@
       let filterBadge = isFiltered ? '🔍' : '';
 
       btn.innerHTML = `<span class="excel-badge">${sortBadge}${filterBadge}</span><span class="excel-arrow">▼</span>`;
-      btn.onclick = (e) => {
+
+      const handleMenuTrigger = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         openHeaderMenu(colName, btn);
       };
+
+      btn.onmousedown = (e) => e.stopPropagation();
+      btn.onclick = handleMenuTrigger;
+
+      // 2. 마우스 구글 스프레드시트 방식 컬럼 리사이저 패드 생성
+      let resizer = th.querySelector('.excel-col-resizer');
+      if (!resizer) {
+        resizer = document.createElement('div');
+        resizer.className = 'excel-col-resizer';
+        th.appendChild(resizer);
+
+        resizer.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const startX = e.clientX;
+          const startWidth = th.offsetWidth;
+          const colIndex = Array.from(th.parentNode.children).indexOf(th);
+          const table = th.closest('table');
+          resizer.classList.add('resizing');
+
+          const onMouseMove = (moveEvent) => {
+            const diff = moveEvent.clientX - startX;
+            const newWidth = Math.max(50, startWidth + diff);
+            const pxWidth = `${newWidth}px`;
+
+            th.style.width = pxWidth;
+            th.style.minWidth = pxWidth;
+            th.style.maxWidth = pxWidth;
+
+            if (table) {
+              const cells = table.querySelectorAll(`tr td:nth-child(${colIndex + 1})`);
+              cells.forEach((td) => {
+                td.style.width = pxWidth;
+                td.style.minWidth = pxWidth;
+                td.style.maxWidth = pxWidth;
+              });
+            }
+          };
+
+          const onMouseUp = () => {
+            resizer.classList.remove('resizing');
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+          };
+
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('mouseup', onMouseUp);
+        });
+      }
     });
   }
 
@@ -957,11 +1007,11 @@
   }
 
   /** 에디터 내부 데이터 내용 변경 처리 */
-  function handleContentChange(newContent) {
+  function handleContentChange(newContent, previousContent, changeStatus) {
     uniqueValuesCache.clear();
-    if (newContent && newContent.json) {
+    if (newContent && newContent.json !== undefined) {
       rawData = newContent.json;
-      updateProcessedContent();
+      content = newContent;
     } else {
       content = newContent;
     }
@@ -1072,20 +1122,12 @@
       >
         ⚡ Compact 복사
       </button>
-      <button
-        type="button"
-        class="jse-action-chip highlight-chip"
-        onclick={handleCopyLlmEscaped}
-        title="LLM Prompt용 Escaped String 복사"
-      >
-        🤖 LLM Escaped
-      </button>
       {#if content?.text}
         <button
           type="button"
           class="jse-action-chip repair-chip"
           onclick={handleRepairJsonAction}
-          title="손상된 LLM JSON 구문 자동 복구"
+          title="손상된 JSON 구문 자동 복구"
         >
           🔧 JSON 수리
         </button>
@@ -1100,12 +1142,12 @@
         onclick={toggleTheme}
         title={theme === 'light' ? '다크 테마로 변경' : '라이트 테마로 변경'}
       >
-        {theme === 'light' ? '🌙 다크' : '☀️ 라이트'}
+        {theme === 'light' ? '☀️ 라이트' : '🌙 다크'}
       </button>
     </div>
   </div>
 
-  <!-- 데이터 통계 & LLM 지표 서브 스탯바 -->
+  <!-- 데이터 통계 서브 스탯바 -->
   <div class="jse-stats-bar">
     <div class="stats-item">
       <span class="stats-label">용량:</span>
@@ -1115,11 +1157,6 @@
     <div class="stats-item">
       <span class="stats-label">노드/항목:</span>
       <span class="stats-value">{datasetMetrics.nodeCount.toLocaleString()}개</span>
-    </div>
-    <div class="stats-divider"></div>
-    <div class="stats-item highlight-stat">
-      <span class="stats-label">🤖 추정 LLM 토큰:</span>
-      <span class="stats-value">~{datasetMetrics.estimatedTokens.toLocaleString()} Tokens</span>
     </div>
   </div>
 
@@ -1234,68 +1271,6 @@
     </div>
   {/if}
 
-  <!-- LLM 개발자 툴박스 모달 -->
-  {#if showLlmToolModal}
-    <div class="modal-backdrop" onclick={() => (showLlmToolModal = false)} onkeydown={(e) => e.key === 'Escape' && (showLlmToolModal = false)} role="presentation" tabindex="-1">
-      <div class="modal-content llm-modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="llm-modal-title" tabindex="-1">
-        <div class="modal-header">
-          <h2 id="llm-modal-title">🤖 LLM Developer Toolbox</h2>
-          <button class="close-btn" onclick={() => (showLlmToolModal = false)} aria-label="닫기">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="llm-tab-bar">
-            <button class="llm-tab-btn" class:active={activeLlmTab === 'schema'} onclick={() => activeLlmTab = 'schema'}>
-              📐 JSON Schema 추출
-            </button>
-            <button class="llm-tab-btn" class:active={activeLlmTab === 'types'} onclick={() => activeLlmTab = 'types'}>
-              🏷️ TypeScript Type
-            </button>
-            <button class="llm-tab-btn" class:active={activeLlmTab === 'escape'} onclick={() => activeLlmTab = 'escape'}>
-              💬 Prompt Escaped String
-            </button>
-          </div>
-
-          {#if activeLlmTab === 'schema'}
-            {@const schemaText = generateJsonSchema(content?.json !== undefined ? content.json : {})}
-            <div class="llm-output-box">
-              <div class="llm-box-header">
-                <span>LLM Function Calling용 JSON Schema (Draft 7)</span>
-                <button class="copy-code-btn" onclick={() => { navigator.clipboard.writeText(schemaText); showToast('JSON Schema 복사 완료'); }}>
-                  📋 스키마 복사
-                </button>
-              </div>
-              <pre class="code-area"><code>{schemaText}</code></pre>
-            </div>
-          {:else if activeLlmTab === 'types'}
-            {@const typesText = generateTypeScriptTypes(content?.json !== undefined ? content.json : {})}
-            <div class="llm-output-box">
-              <div class="llm-box-header">
-                <span>TypeScript Interface / Type 정의</span>
-                <button class="copy-code-btn" onclick={() => { navigator.clipboard.writeText(typesText); showToast('TypeScript Type 복사 완료'); }}>
-                  📋 타입 복사
-                </button>
-              </div>
-              <pre class="code-area"><code>{typesText}</code></pre>
-            </div>
-          {:else if activeLlmTab === 'escape'}
-            {@const escapedText = escapeJsonString(content?.json !== undefined ? content.json : content?.text)}
-            <div class="llm-output-box">
-              <div class="llm-box-header">
-                <span>LLM System / User Prompt 삽입용 Escaped String</span>
-                <button class="copy-code-btn" onclick={() => { navigator.clipboard.writeText(escapedText); showToast('Escaped String 복사 완료'); }}>
-                  📋 Escaped 복사
-                </button>
-              </div>
-              <pre class="code-area"><code>{escapedText}</code></pre>
-            </div>
-          {/if}
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" onclick={() => (showLlmToolModal = false)}>닫기</button>
-        </div>
-      </div>
-    </div>
-  {/if}
 
   <!-- 활성 정렬 & 필터 상태 정보 바 (테이블 모드 전용) -->
   {#if mode === Mode.table && (sortRules.length > 0 || Object.keys(filterRules).length > 0)}
@@ -1543,11 +1518,6 @@
     font-family: var(--app-font-code);
   }
 
-  .stats-item.highlight-stat .stats-value {
-    color: #38bdf8;
-    font-weight: 700;
-  }
-
   .stats-divider {
     width: 1px;
     height: 12px;
@@ -1625,11 +1595,6 @@
     overflow: hidden;
   }
 
-  .modal-content.llm-modal-content {
-    width: 680px;
-    max-width: 95vw;
-  }
-
   .modal-header {
     display: flex;
     align-items: center;
@@ -1666,75 +1631,6 @@
     gap: 1.125rem;
     max-height: 70vh;
     overflow-y: auto;
-  }
-
-  /* LLM 툴박스 탭 및 출력 스타일 */
-  .llm-tab-bar {
-    display: flex;
-    gap: 8px;
-    border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 8px;
-  }
-
-  .llm-tab-btn {
-    padding: 6px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 6px;
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    color: #475569;
-    cursor: pointer;
-    transition: all 0.12s;
-  }
-
-  .llm-tab-btn.active {
-    background: #0284c7;
-    border-color: #0284c7;
-    color: #ffffff;
-  }
-
-  .llm-output-box {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .llm-box-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 12px;
-    font-weight: 700;
-    color: #334155;
-  }
-
-  .copy-code-btn {
-    padding: 4px 10px;
-    font-size: 11px;
-    font-weight: 700;
-    background: #0f172a;
-    color: #38bdf8;
-    border: 1px solid #0284c7;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .copy-code-btn:hover {
-    background: #1e293b;
-  }
-
-  .code-area {
-    background: #0f172a;
-    color: #38bdf8;
-    padding: 12px;
-    border-radius: 8px;
-    font-family: var(--app-font-code);
-    font-size: 13px;
-    max-height: 320px;
-    overflow: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
   }
 
   .font-section {
@@ -2066,6 +1962,8 @@
     align-items: center !important;
     gap: 2px !important;
     border-radius: 3px !important;
+    flex-shrink: 0 !important;
+    vertical-align: middle !important;
   }
 
   :global([data-theme="dark"] .excel-header-trigger) {
