@@ -43,9 +43,8 @@ export function repairJsonString(text) {
   cleaned = cleaned.replace(/\bundefined\b/g, 'null');
   cleaned = cleaned.replace(/\bNaN\b/g, 'null');
 
-  // 토큰 제약으로 인해 중단된 미완성 괄호 및 문자열 닫기 처리
-  let openBraces = 0;
-  let openBrackets = 0;
+  // LIFO 스택 기반 미완성 괄호 및 문자열 닫기 처리
+  const stack = [];
   let inString = false;
   let isEscaped = false;
 
@@ -64,10 +63,15 @@ export function repairJsonString(text) {
       continue;
     }
     if (!inString) {
-      if (char === '{') openBraces++;
-      if (char === '}') openBraces = Math.max(0, openBraces - 1);
-      if (char === '[') openBrackets++;
-      if (char === ']') openBrackets = Math.max(0, openBrackets - 1);
+      if (char === '{') stack.push('}');
+      else if (char === '[') stack.push(']');
+      else if (char === '}') {
+        const lastIdx = stack.lastIndexOf('}');
+        if (lastIdx !== -1) stack.splice(lastIdx, 1);
+      } else if (char === ']') {
+        const lastIdx = stack.lastIndexOf(']');
+        if (lastIdx !== -1) stack.splice(lastIdx, 1);
+      }
     }
   }
 
@@ -79,15 +83,9 @@ export function repairJsonString(text) {
   // 끝부분에 남은 콤마 제거
   cleaned = cleaned.replace(/,\s*$/, '');
 
-  // 누락된 닫는 괄호/대괄호 보완
-  while (openBraces > 0 || openBrackets > 0) {
-    if (openBrackets > 0 && (openBraces === 0 || cleaned.lastIndexOf('[') > cleaned.lastIndexOf('{'))) {
-      cleaned += ']';
-      openBrackets--;
-    } else if (openBraces > 0) {
-      cleaned += '}';
-      openBraces--;
-    }
+  // 누락된 닫는 괄호/대괄호 LIFO 순서 보완
+  while (stack.length > 0) {
+    cleaned += stack.pop();
   }
 
   return cleaned;
