@@ -187,7 +187,7 @@ export function onRenderContextMenu(items, context) {
 
 // DOM Translation observer for elements like SearchBox, NavigationBar, Welcome screen, Node tooltips, Modals, Statusbar
 export function setupI18nObserver() {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') return () => {};
 
   function translateDOM() {
     if (currentLanguage !== 'ko') return;
@@ -391,28 +391,36 @@ export function setupI18nObserver() {
     });
   }
 
-  // Initial translation check
+  // Initial translation
   translateDOM();
 
-  // Observer for dynamic element updates
+  // Observer for dynamic element updates with requestAnimationFrame debouncing
   let observer;
-  const safeTranslate = () => {
-    if (observer) observer.disconnect();
-    translateDOM();
-    if (observer) {
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true
-      });
-    }
+  let rafId = null;
+
+  const debouncedTranslate = () => {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(() => {
+      if (observer) observer.disconnect();
+      translateDOM();
+      if (observer) {
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+      }
+    });
   };
 
   observer = new MutationObserver(() => {
-    safeTranslate();
+    debouncedTranslate();
   });
 
-  safeTranslate();
+  debouncedTranslate();
 
-  return () => observer.disconnect();
+  return () => {
+    if (observer) observer.disconnect();
+    if (rafId) cancelAnimationFrame(rafId);
+  };
 }

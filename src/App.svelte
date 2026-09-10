@@ -2,6 +2,14 @@
   import { onMount } from 'svelte';
   import { JSONEditor, Mode } from 'svelte-jsoneditor';
   import { onRenderMenu, onRenderContextMenu, setupI18nObserver } from './i18n.js';
+  import {
+    repairJsonString,
+    escapeJsonString,
+    unescapeJsonString,
+    generateJsonSchema,
+    generateTypeScriptTypes,
+    calculateDatasetMetrics
+  } from './utils/llmUtils.js';
 
   // 기본 프리셋 폰트 정의
   const presetUiFonts = [
@@ -33,6 +41,86 @@
     { label: '매우 넓게 (36px)', value: '36px' }
   ];
 
+  // 샘플 데이터 프리셋 정의
+  const samplePresets = [
+    {
+      id: 'default',
+      name: '기본 iMJSON 샘플',
+      data: [
+        {
+          "id": 1,
+          "name": "iMJSON",
+          "category": "Developer Tool",
+          "status": "Active",
+          "version": "1.0.0",
+          "offlineSupport": true,
+          "description": "iMJSON 사내 내부망 JSON 에디터"
+        },
+        {
+          "id": 2,
+          "name": "Tree Mode Visualizer",
+          "category": "Feature",
+          "status": "Active",
+          "version": "1.2.0",
+          "offlineSupport": true,
+          "description": "JSON 구조를 계층적 트리 형태로 시각화 및 편집"
+        },
+        {
+          "id": 3,
+          "name": "Table Grid Viewer",
+          "category": "Feature",
+          "status": "Active",
+          "version": "1.1.0",
+          "offlineSupport": true,
+          "description": "객체 배열 데이터를 표(Table) 형태로 조회 및 수정"
+        }
+      ]
+    },
+    {
+      id: 'llm_tool_call',
+      name: 'LLM Function Call 스키마 응답',
+      data: {
+        "tool_call_id": "call_98f12a3d_banking_transfer",
+        "name": "execute_fund_transfer",
+        "arguments": {
+          "source_account": "110-123-456789",
+          "target_account": "100-987-654321",
+          "amount": 500000,
+          "currency": "KRW",
+          "memo": "iMJSON LLM 개발 도구 테스트 송금",
+          "verification_token": "a8f3-4d2c-9810-e2ff"
+        },
+        "response_status": "success",
+        "execution_time_ms": 42.8,
+        "audit": {
+          "ip_address": "10.100.24.15",
+          "system_env": "Internal Intranet"
+        }
+      }
+    },
+    {
+      id: 'banking_api',
+      name: '사내 금융 API 응답 데이터',
+      data: {
+        "header": {
+          "tr_code": "M3002_ACC_LIST",
+          "status_code": "200",
+          "message": "정상 처리되었습니다.",
+          "timestamp": "2025-05-18T14:20:00+09:00"
+        },
+        "body": {
+          "user_id": "usr_99812",
+          "user_name": "홍길동",
+          "accounts": [
+            { "acc_num": "110-12-34567", "type": "보통예금", "balance": 15420000, "is_active": true },
+            { "acc_num": "210-98-76543", "type": "정기적금", "balance": 50000000, "is_active": true },
+            { "acc_num": "330-11-22334", "type": "주택청약", "balance": 12000000, "is_active": false }
+          ]
+        }
+      }
+    }
+  ];
+
   let systemFonts = $state([]);
 
   // 상태 관리
@@ -50,44 +138,35 @@
   let toolbarControlsEl = $state();
 
   let showFontModal = $state(false);
+  let showLlmToolModal = $state(false);
+  let activeLlmTab = $state('schema'); // 'schema', 'types', 'escape'
+
+  // 드래그 앤 드롭 상태
+  let isDraggingFile = $state(false);
+  let dragLeaveTimer;
+
+  // 알림 토스트 메시지
+  let toastMessage = $state('');
+  let toastTimer;
+
+  function showToast(msg) {
+    toastMessage = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toastMessage = '';
+    }, 2500);
+  }
 
   // 원본 데이터 저장소
-  let initialRawData = [
-    {
-      "id": 1,
-      "name": "iMJSON",
-      "category": "Developer Tool",
-      "status": "Active",
-      "version": "1.0.0",
-      "offlineSupport": true,
-      "description": "iMJSON 사내 내부망 JSON 에디터"
-    },
-    {
-      "id": 2,
-      "name": "Tree Mode Visualizer",
-      "category": "Feature",
-      "status": "Active",
-      "version": "1.2.0",
-      "offlineSupport": true,
-      "description": "JSON 구조를 계층적 트리 형태로 시각화 및 편집"
-    },
-    {
-      "id": 3,
-      "name": "Table Grid Viewer",
-      "category": "Feature",
-      "status": "Active",
-      "version": "1.1.0",
-      "offlineSupport": true,
-      "description": "객체 배열 데이터를 표(Table) 형태로 조회 및 수정"
-    }
-  ];
-
-  let rawData = $state(initialRawData);
+  let rawData = $state(samplePresets[0].data);
 
   // 다중 정렬 규칙: [{ key: 'category', dir: 'asc' }, { key: 'name', dir: 'desc' }]
   let sortRules = $state([]);
   // 필터 규칙: { category: Set(['Developer Tool']), ... }
   let filterRules = $state({});
+
+  // Memoization 캐시
+  let uniqueValuesCache = new Map();
 
   // 팝업 오픈 상태
   let activeMenuCol = $state(null); // 연 열(Column) 이름
@@ -96,13 +175,19 @@
   let tempSelectedValues = $state(new Set());
 
   // 계산된 JSON 에디터 전달용 content
-  let content = $state({ json: initialRawData });
+  let content = $state({ json: samplePresets[0].data });
 
   let mode = $state(Mode.tree);
   let fileInput = $state();
 
   // 현재 활성화된 테이블 셀 인덱스 레퍼런스 (행, 열)
   let currentActiveCellIndex = $state({ row: 0, col: 0 });
+
+  // 실시간 메트릭스 계산
+  let datasetMetrics = $derived.by(() => {
+    const raw = content?.json !== undefined ? content.json : content?.text || '';
+    return calculateDatasetMetrics(raw);
+  });
 
   // 데이터 정렬 & 필터링 계산 함수
   function getProcessedData(source, sorts, filters) {
@@ -155,14 +240,55 @@
 
   // 데이터 변경 시 content 업데이트
   function updateProcessedContent() {
+    uniqueValuesCache.clear();
     if (Array.isArray(rawData)) {
       const processed = getProcessedData(rawData, sortRules, filterRules);
       content = { json: processed };
     }
   }
 
+  function loadSamplePreset(presetId) {
+    const preset = samplePresets.find(p => p.id === presetId);
+    if (preset) {
+      rawData = preset.data;
+      sortRules = [];
+      filterRules = {};
+      uniqueValuesCache.clear();
+      content = { json: preset.data };
+      showToast(`'${preset.name}' 샘플 데이터 로드 완료`);
+    }
+  }
+
   function triggerFileUpload() {
     if (fileInput) fileInput.click();
+  }
+
+  function handleFileContent(text, fileName = '') {
+    try {
+      // 1. 일반 JSON 파싱 시도
+      try {
+        const parsed = JSON.parse(text);
+        rawData = parsed;
+        sortRules = [];
+        filterRules = {};
+        uniqueValuesCache.clear();
+        content = { json: parsed };
+        showToast(`파일 로드 완료: ${fileName || 'JSON Data'}`);
+      } catch (jsonErr) {
+        // 2. LLM JSON Repair 복구 시도
+        const repairedText = repairJsonString(text);
+        const parsed = JSON.parse(repairedText);
+        rawData = parsed;
+        sortRules = [];
+        filterRules = {};
+        uniqueValuesCache.clear();
+        content = { json: parsed };
+        showToast('손상된 JSON 구문 자동 복구 및 로드 성공');
+      }
+    } catch (err) {
+      content = { text: text };
+      showToast('텍스트 모드로 로드되었습니다 (JSON 파싱 불가)');
+    }
   }
 
   function handleFileUpload(event) {
@@ -171,27 +297,92 @@
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      try {
-        const text = e.target.result;
-        try {
-          const parsed = JSON.parse(text);
-          if (Array.isArray(parsed)) {
-            rawData = parsed;
-          } else {
-            rawData = parsed;
-          }
-          sortRules = [];
-          filterRules = {};
-          content = { json: parsed };
-        } catch {
-          content = { text: text };
-        }
-      } catch (err) {
-        alert('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
-      }
+      handleFileContent(e.target.result, file.name);
     };
     reader.readAsText(file);
     event.target.value = '';
+  }
+
+  // 전체 화면 드래그 앤 드롭 파일 로더
+  function setupDragAndDrop() {
+    const handleDragOver = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      clearTimeout(dragLeaveTimer);
+      isDraggingFile = true;
+    };
+
+    const handleDragLeave = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragLeaveTimer = setTimeout(() => {
+        isDraggingFile = false;
+      }, 100);
+    };
+
+    const handleDrop = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isDraggingFile = false;
+
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) {
+        const file = files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          handleFileContent(evt.target.result, file.name);
+        };
+        reader.readAsText(file);
+      }
+    };
+
+    window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('dragleave', handleDragLeave);
+    window.addEventListener('drop', handleDrop);
+
+    return () => {
+      window.removeEventListener('dragover', handleDragOver);
+      window.removeEventListener('dragleave', handleDragLeave);
+      window.removeEventListener('drop', handleDrop);
+    };
+  }
+
+  // --- 빠른 복사 및 LLM 툴바 기능 ---
+  function handleCopyFormatted() {
+    const targetData = content?.json !== undefined ? content.json : content?.text;
+    const str = typeof targetData === 'string' ? targetData : JSON.stringify(targetData, null, 2);
+    navigator.clipboard.writeText(str);
+    showToast('Formatted JSON 클립보드 복사 완료');
+  }
+
+  function handleCopyMinified() {
+    const targetData = content?.json !== undefined ? content.json : content?.text;
+    const str = typeof targetData === 'string' ? targetData : JSON.stringify(targetData);
+    navigator.clipboard.writeText(str);
+    showToast('Minified JSON 클립보드 복사 완료');
+  }
+
+  function handleCopyLlmEscaped() {
+    const targetData = content?.json !== undefined ? content.json : content?.text;
+    const str = escapeJsonString(targetData);
+    navigator.clipboard.writeText(str);
+    showToast('LLM Prompt용 Escaped JSON 복사 완료');
+  }
+
+  function handleRepairJsonAction() {
+    if (content?.text) {
+      try {
+        const repaired = repairJsonString(content.text);
+        const parsed = JSON.parse(repaired);
+        rawData = parsed;
+        content = { json: parsed };
+        showToast('JSON 구문 자동 복구 완료');
+      } catch (err) {
+        alert('복구 중 오류 발생: ' + err.message);
+      }
+    } else {
+      showToast('이미 유효한 JSON 형식입니다');
+    }
   }
 
   function applyFontSize() {
@@ -328,6 +519,16 @@
       onClick: () => triggerFileUpload()
     };
 
+    const llmToolboxButton = {
+      type: 'button',
+      text: '🤖 LLM 도구',
+      title: 'LLM Schema / TypeScript Type / Prompt 변환 도구',
+      className: 'jse-custom-btn jse-llm-btn',
+      onClick: () => {
+        showLlmToolModal = true;
+      }
+    };
+
     const fontSettingsButton = {
       type: 'button',
       text: '폰트 설정',
@@ -357,6 +558,7 @@
       customBrandLabel,
       separator,
       openFileButton,
+      llmToolboxButton,
       fontSettingsButton,
       separator,
       fontControlSlotPlaceholder,
@@ -430,16 +632,22 @@
     }
   }
 
-  // --- 헤더 버튼 및 필터/다중정렬 바인딩 관찰자 ---
+  // Memoization 기반 유니크 컬럼 값 추출
   function getUniqueValuesForColumn(colKey) {
     if (!Array.isArray(rawData)) return [];
+    if (uniqueValuesCache.has(colKey)) {
+      return uniqueValuesCache.get(colKey);
+    }
+
     const values = new Set();
     for (const row of rawData) {
       if (row && typeof row === 'object' && colKey in row) {
         values.add(String(row[colKey] ?? ''));
       }
     }
-    return Array.from(values).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+    const sorted = Array.from(values).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+    uniqueValuesCache.set(colKey, sorted);
+    return sorted;
   }
 
   function openHeaderMenu(colKey, targetEl) {
@@ -536,7 +744,10 @@
     closeHeaderMenu();
   }
 
-  // DOM mutation observer for table header decorator
+  // DOM mutation observer for table header decorator (최적화: MutationObserver + requestAnimationFrame)
+  let headerObserver;
+  let rafHeaderId;
+
   function decorateTableHeaders() {
     if (mode !== Mode.table) return;
     const thEls = document.querySelectorAll('.jse-table-mode table th:not(.jse-table-cell-gutter)');
@@ -578,6 +789,27 @@
     });
   }
 
+  function setupHeaderObserver() {
+    const scheduleDecorate = () => {
+      if (rafHeaderId) cancelAnimationFrame(rafHeaderId);
+      rafHeaderId = requestAnimationFrame(() => {
+        decorateTableHeaders();
+      });
+    };
+
+    headerObserver = new MutationObserver(() => {
+      scheduleDecorate();
+    });
+
+    headerObserver.observe(document.body, { childList: true, subtree: true });
+    scheduleDecorate();
+
+    return () => {
+      if (headerObserver) headerObserver.disconnect();
+      if (rafHeaderId) cancelAnimationFrame(rafHeaderId);
+    };
+  }
+
   // 특정 셀 활성화 및 편집 모드 트리거 지원 함수
   function activateCellAt(rowIndex, colIndex) {
     const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
@@ -601,7 +833,6 @@
 
   // --- 구글 스프레드시트 UX: 단일 클릭 편집, 전체 선택, Tab/방향키 이동 ---
   function setupSpreadsheetUX() {
-    // 1. 단일 클릭 즉시 편집 모드 활성화 & 전체 선택 (Table 및 Tree 공통)
     const handleGlobalClick = (e) => {
       const target = e.target;
       if (!target || typeof target.closest !== 'function') return;
@@ -632,7 +863,6 @@
       }
     };
 
-    // 2. 포커스 시 input / textarea / editable 영역 전체 선택
     const handleGlobalFocusIn = (e) => {
       const target = e.target;
       if (!target) return;
@@ -654,7 +884,6 @@
       }
     };
 
-    // 3. Tab, Shift+Tab 및 방향키(Arrow) 이동 핸들러
     const handleGlobalKeyDown = (e) => {
       if (mode !== Mode.table) return;
 
@@ -669,7 +898,6 @@
         const currentRowCells = Array.from(rows[row]?.querySelectorAll('td.jse-table-cell') || []);
 
         if (!e.shiftKey) {
-          // 오른쪽 셀 이동
           if (col < currentRowCells.length - 1) {
             col += 1;
           } else if (row < rows.length - 1) {
@@ -677,7 +905,6 @@
             col = 0;
           }
         } else {
-          // 왼쪽 셀 이동
           if (col > 0) {
             col -= 1;
           } else if (row > 0) {
@@ -691,12 +918,10 @@
         return;
       }
 
-      // 방향키 처리 (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         const active = document.activeElement;
         const isEditingInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && !active.classList.contains('jse-hidden-input');
 
-        // Ctrl/Alt 조합 또는 일반 선택 상태에서의 방향키 셀 이동
         if (!isEditingInput || e.ctrlKey || e.altKey) {
           e.preventDefault();
           e.stopPropagation();
@@ -743,15 +968,14 @@
 
     const cleanupI18n = setupI18nObserver();
     const cleanupUX = setupSpreadsheetUX();
-
-    const headerInterval = setInterval(() => {
-      decorateTableHeaders();
-    }, 200);
+    const cleanupHeader = setupHeaderObserver();
+    const cleanupDragDrop = setupDragAndDrop();
 
     return () => {
       cleanupI18n();
       cleanupUX();
-      clearInterval(headerInterval);
+      cleanupHeader();
+      cleanupDragDrop();
     };
   });
 
@@ -764,6 +988,7 @@
   }
 
   function handleContentChange(newContent) {
+    uniqueValuesCache.clear();
     if (newContent && newContent.json) {
       rawData = newContent.json;
       updateProcessedContent();
@@ -776,10 +1001,44 @@
 <div class="container">
   <input bind:this={fileInput} type="file" accept=".json,application/json,text/plain" onchange={handleFileUpload} style="display: none;" />
 
+  <!-- 알림 토스트 UI -->
+  {#if toastMessage}
+    <div class="toast-notification">
+      ✨ {toastMessage}
+    </div>
+  {/if}
+
+  <!-- 전체 화면 드래그 앤 드롭 오버레이 -->
+  {#if isDraggingFile}
+    <div class="drag-drop-overlay">
+      <div class="drag-drop-box">
+        <div class="drag-icon">📁</div>
+        <h3>JSON 파일 놓기 (Drop File Here)</h3>
+        <p>어디서든 JSON 또는 텍스트 파일을 드롭하면 에디터에 로드됩니다.</p>
+      </div>
+    </div>
+  {/if}
+
   <!-- 툴바 삽입용 커스텀 컨트롤 그룹 -->
   <div bind:this={toolbarControlsEl} class="jse-toolbar-controls">
+    <!-- 샘플 데이터 빠른 선택기 -->
+    <div class="jse-sample-group">
+      <span class="jse-control-label">샘플</span>
+      <select
+        class="jse-font-size-select jse-sample-select"
+        onchange={(e) => loadSamplePreset(e.target.value)}
+        title="테스트용 샘플 데이터 세트 불러오기"
+      >
+        <option value="" disabled selected>샘플 선택</option>
+        {#each samplePresets as preset}
+          <option value={preset.id}>{preset.name}</option>
+        {/each}
+      </select>
+    </div>
+
+    <!-- 폰트 크기 조절 -->
     <div class="jse-font-size-group">
-      <span class="jse-control-label">글자 크기</span>
+      <span class="jse-control-label">크기</span>
       <button
         type="button"
         class="jse-font-size-btn"
@@ -810,8 +1069,9 @@
       </button>
     </div>
 
+    <!-- 행 높이 -->
     <div class="jse-row-height-group">
-      <span class="jse-control-label">행 높이</span>
+      <span class="jse-control-label">행높이</span>
       <select
         class="jse-font-size-select"
         value={rowHeight}
@@ -824,6 +1084,45 @@
       </select>
     </div>
 
+    <!-- 빠른 복사 도구 버튼 그룹 -->
+    <div class="jse-quick-action-group">
+      <button
+        type="button"
+        class="jse-action-chip"
+        onclick={handleCopyFormatted}
+        title="Formatted JSON 클립보드 복사"
+      >
+        📋 Format 복사
+      </button>
+      <button
+        type="button"
+        class="jse-action-chip"
+        onclick={handleCopyMinified}
+        title="Minified JSON (한 줄) 복사"
+      >
+        ⚡ Compact 복사
+      </button>
+      <button
+        type="button"
+        class="jse-action-chip highlight-chip"
+        onclick={handleCopyLlmEscaped}
+        title="LLM Prompt용 Escaped String 복사"
+      >
+        🤖 LLM Escaped
+      </button>
+      {#if content?.text}
+        <button
+          type="button"
+          class="jse-action-chip repair-chip"
+          onclick={handleRepairJsonAction}
+          title="손상된 LLM JSON 구문 자동 복구"
+        >
+          🔧 JSON 수리
+        </button>
+      {/if}
+    </div>
+
+    <!-- 테마 토글 -->
     <div class="jse-theme-group">
       <button
         type="button"
@@ -836,6 +1135,25 @@
     </div>
   </div>
 
+  <!-- 데이터 통계 & LLM 지표 서브 스탯바 -->
+  <div class="jse-stats-bar">
+    <div class="stats-item">
+      <span class="stats-label">용량:</span>
+      <span class="stats-value">{datasetMetrics.formattedSize}</span>
+    </div>
+    <div class="stats-divider"></div>
+    <div class="stats-item">
+      <span class="stats-label">노드/항목:</span>
+      <span class="stats-value">{datasetMetrics.nodeCount.toLocaleString()}개</span>
+    </div>
+    <div class="stats-divider"></div>
+    <div class="stats-item highlight-stat">
+      <span class="stats-label">🤖 추정 LLM 토큰:</span>
+      <span class="stats-value">~{datasetMetrics.estimatedTokens.toLocaleString()} Tokens</span>
+    </div>
+  </div>
+
+  <!-- 폰트 설정 모달 -->
   {#if showFontModal}
     <div class="modal-backdrop" onclick={() => (showFontModal = false)} onkeydown={(e) => e.key === 'Escape' && (showFontModal = false)} role="presentation" tabindex="-1">
       <div class="modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
@@ -941,6 +1259,69 @@
 
         <div class="modal-footer">
           <button class="btn btn-primary" onclick={() => (showFontModal = false)}>확인</button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- LLM 개발자 툴박스 모달 -->
+  {#if showLlmToolModal}
+    <div class="modal-backdrop" onclick={() => (showLlmToolModal = false)} onkeydown={(e) => e.key === 'Escape' && (showLlmToolModal = false)} role="presentation" tabindex="-1">
+      <div class="modal-content llm-modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="llm-modal-title" tabindex="-1">
+        <div class="modal-header">
+          <h2 id="llm-modal-title">🤖 LLM Developer Toolbox</h2>
+          <button class="close-btn" onclick={() => (showLlmToolModal = false)} aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="llm-tab-bar">
+            <button class="llm-tab-btn" class:active={activeLlmTab === 'schema'} onclick={() => activeLlmTab = 'schema'}>
+              📐 JSON Schema 추출
+            </button>
+            <button class="llm-tab-btn" class:active={activeLlmTab === 'types'} onclick={() => activeLlmTab = 'types'}>
+              🏷️ TypeScript Type
+            </button>
+            <button class="llm-tab-btn" class:active={activeLlmTab === 'escape'} onclick={() => activeLlmTab = 'escape'}>
+              💬 Prompt Escaped String
+            </button>
+          </div>
+
+          {#if activeLlmTab === 'schema'}
+            {@const schemaText = generateJsonSchema(content?.json !== undefined ? content.json : {})}
+            <div class="llm-output-box">
+              <div class="llm-box-header">
+                <span>LLM Function Calling용 JSON Schema (Draft 7)</span>
+                <button class="copy-code-btn" onclick={() => { navigator.clipboard.writeText(schemaText); showToast('JSON Schema 복사 완료'); }}>
+                  📋 스키마 복사
+                </button>
+              </div>
+              <pre class="code-area"><code>{schemaText}</code></pre>
+            </div>
+          {:else if activeLlmTab === 'types'}
+            {@const typesText = generateTypeScriptTypes(content?.json !== undefined ? content.json : {})}
+            <div class="llm-output-box">
+              <div class="llm-box-header">
+                <span>TypeScript Interface / Type 정의</span>
+                <button class="copy-code-btn" onclick={() => { navigator.clipboard.writeText(typesText); showToast('TypeScript Type 복사 완료'); }}>
+                  📋 타입 복사
+                </button>
+              </div>
+              <pre class="code-area"><code>{typesText}</code></pre>
+            </div>
+          {:else if activeLlmTab === 'escape'}
+            {@const escapedText = escapeJsonString(content?.json !== undefined ? content.json : content?.text)}
+            <div class="llm-output-box">
+              <div class="llm-box-header">
+                <span>LLM System / User Prompt 삽입용 Escaped String</span>
+                <button class="copy-code-btn" onclick={() => { navigator.clipboard.writeText(escapedText); showToast('Escaped String 복사 완료'); }}>
+                  📋 Escaped 복사
+                </button>
+              </div>
+              <pre class="code-area"><code>{escapedText}</code></pre>
+            </div>
+          {/if}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick={() => (showLlmToolModal = false)}>닫기</button>
         </div>
       </div>
     </div>
@@ -1076,6 +1457,70 @@
     height: 100vh;
     width: 100vw;
     background-color: #f8fafc;
+    position: relative;
+  }
+
+  /* 알림 토스트 UI */
+  .toast-notification {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f172a;
+    color: #38bdf8;
+    border: 1px solid #0284c7;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    z-index: 3000;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 드래그 앤 드롭 오버레이 */
+  .drag-drop-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(4px);
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .drag-drop-box {
+    border: 3px dashed #38bdf8;
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 16px;
+    padding: 40px 60px;
+    text-align: center;
+    color: #ffffff;
+  }
+
+  .drag-icon {
+    font-size: 50px;
+    margin-bottom: 12px;
+  }
+
+  .drag-drop-box h3 {
+    font-size: 20px;
+    color: #38bdf8;
+    margin-bottom: 8px;
+  }
+
+  .drag-drop-box p {
+    font-size: 14px;
+    color: #cbd5e1;
   }
 
   .btn {
@@ -1098,6 +1543,45 @@
 
   .btn-primary:hover {
     background-color: #1d4ed8;
+  }
+
+  /* 서브 통계 바 스타일 */
+  .jse-stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 16px;
+    background-color: #1e293b;
+    border-bottom: 1px solid #334155;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  .stats-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stats-label {
+    color: #64748b;
+  }
+
+  .stats-value {
+    color: #f1f5f9;
+    font-weight: 600;
+    font-family: var(--app-font-code);
+  }
+
+  .stats-item.highlight-stat .stats-value {
+    color: #38bdf8;
+    font-weight: 700;
+  }
+
+  .stats-divider {
+    width: 1px;
+    height: 12px;
+    background-color: #334155;
   }
 
   /* Status Bar Style */
@@ -1171,6 +1655,11 @@
     overflow: hidden;
   }
 
+  .modal-content.llm-modal-content {
+    width: 680px;
+    max-width: 95vw;
+  }
+
   .modal-header {
     display: flex;
     align-items: center;
@@ -1207,6 +1696,75 @@
     gap: 1.125rem;
     max-height: 70vh;
     overflow-y: auto;
+  }
+
+  /* LLM 툴박스 탭 및 출력 스타일 */
+  .llm-tab-bar {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+
+  .llm-tab-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+
+  .llm-tab-btn.active {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+  }
+
+  .llm-output-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .llm-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  .copy-code-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #0f172a;
+    color: #38bdf8;
+    border: 1px solid #0284c7;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .copy-code-btn:hover {
+    background: #1e293b;
+  }
+
+  .code-area {
+    background: #0f172a;
+    color: #38bdf8;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: var(--app-font-code);
+    font-size: 13px;
+    max-height: 320px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
   }
 
   .font-section {
