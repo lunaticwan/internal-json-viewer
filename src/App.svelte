@@ -114,6 +114,32 @@
   let currentActiveCellIndex = $state({ row: 0, col: 0 });
 
   // ---------------------------------------------------------------------------
+  // [상태 관리: 멀티 탭 관리 (Multi-Tab)]
+  // ---------------------------------------------------------------------------
+
+  /** 탭 목록 상태 배열 */
+  let tabs = $state([
+    {
+      id: 'tab-1',
+      title: '새 문서 1',
+      rawData: DEFAULT_SAMPLE_DATA,
+      content: { json: DEFAULT_SAMPLE_DATA },
+      sortRules: [],
+      filterRules: {},
+      mode: Mode.tree
+    }
+  ]);
+
+  /** 현재 활성화된 탭 ID */
+  let activeTabId = $state('tab-1');
+
+  /** 탭 일련번호 카운터 */
+  let tabCounter = $state(1);
+
+  /** 탭 바 Element 레퍼런스 */
+  let tabBarEl = $state();
+
+  // ---------------------------------------------------------------------------
   // [파생 상태 (Derived State)]
   // ---------------------------------------------------------------------------
 
@@ -141,6 +167,104 @@
       const processed = getProcessedData(rawData, sortRules, filterRules);
       content = { json: processed };
     }
+    const currentTab = tabs.find((t) => t.id === activeTabId);
+    if (currentTab) {
+      currentTab.content = content;
+      currentTab.sortRules = sortRules;
+      currentTab.filterRules = filterRules;
+    }
+  }
+
+  /** 현재 활성 탭 상태 동기화 저장 */
+  function saveCurrentTabState() {
+    const currentTab = tabs.find((t) => t.id === activeTabId);
+    if (currentTab) {
+      currentTab.rawData = rawData;
+      currentTab.content = content;
+      currentTab.sortRules = sortRules;
+      currentTab.filterRules = filterRules;
+      currentTab.mode = mode;
+    }
+  }
+
+  /** 특정 탭 상태를 활성화 상태로 불러오기 */
+  function loadTabState(tabId) {
+    const targetTab = tabs.find((t) => t.id === tabId);
+    if (targetTab) {
+      activeTabId = tabId;
+      rawData = targetTab.rawData;
+      content = targetTab.content;
+      sortRules = targetTab.sortRules;
+      filterRules = targetTab.filterRules;
+      mode = targetTab.mode;
+      uniqueValuesCache.clear();
+      setTimeout(() => {
+        attachFontSizeControl();
+        attachTabBar();
+        decorateTableHeaders();
+      }, 50);
+    }
+  }
+
+  /** 탭 전환 처리 */
+  function switchTab(tabId) {
+    if (tabId === activeTabId) return;
+    logEvent('TAB', 'switch_tab', { from: activeTabId, to: tabId });
+    saveCurrentTabState();
+    loadTabState(tabId);
+  }
+
+  /** 새 탭 생성 처리 */
+  function createNewTab(initialData = {}, titleName = null) {
+    saveCurrentTabState();
+    tabCounter += 1;
+    const newTabId = `tab-${Date.now()}-${tabCounter}`;
+    const newTitle = titleName || `새 문서 ${tabCounter}`;
+    const defaultContent = typeof initialData === 'string' ? { text: initialData } : { json: initialData };
+    const newTab = {
+      id: newTabId,
+      title: newTitle,
+      rawData: initialData,
+      content: defaultContent,
+      sortRules: [],
+      filterRules: {},
+      mode: Mode.tree
+    };
+    tabs = [...tabs, newTab];
+    loadTabState(newTabId);
+    logEvent('TAB', 'create_tab', { id: newTabId, title: newTitle });
+  }
+
+  /** 탭 닫기 처리 */
+  function closeTab(tabId) {
+    logEvent('TAB', 'close_tab', { tabId });
+    if (tabs.length === 1) {
+      tabCounter += 1;
+      const newTabId = `tab-${Date.now()}-${tabCounter}`;
+      const newTitle = `새 문서 ${tabCounter}`;
+      const newTab = {
+        id: newTabId,
+        title: newTitle,
+        rawData: {},
+        content: { json: {} },
+        sortRules: [],
+        filterRules: {},
+        mode: Mode.tree
+      };
+      tabs = [newTab];
+      loadTabState(newTabId);
+      showToast('모든 탭이 닫혀 새 문서를 생성했습니다.');
+      return;
+    }
+
+    const index = tabs.findIndex((t) => t.id === tabId);
+    const isClosingActive = tabId === activeTabId;
+    tabs = tabs.filter((t) => t.id !== tabId);
+
+    if (isClosingActive) {
+      const nextTab = tabs[Math.max(0, index - 1)];
+      loadTabState(nextTab.id);
+    }
   }
 
   /**
@@ -167,6 +291,16 @@
         filterRules = {};
         uniqueValuesCache.clear();
         content = { json: parsed };
+
+        const currentTab = tabs.find((t) => t.id === activeTabId);
+        if (currentTab) {
+          currentTab.title = fileName || currentTab.title;
+          currentTab.rawData = parsed;
+          currentTab.content = content;
+          currentTab.sortRules = [];
+          currentTab.filterRules = {};
+        }
+
         showToast(`파일 로드 완료: ${fileName || 'JSON Data'}`);
       } catch (jsonErr) {
         logEvent('FILE', 'json_parse_failed_trying_repair', { fileName, error: jsonErr.message });
@@ -178,11 +312,28 @@
         filterRules = {};
         uniqueValuesCache.clear();
         content = { json: parsed };
+
+        const currentTab = tabs.find((t) => t.id === activeTabId);
+        if (currentTab) {
+          currentTab.title = fileName || currentTab.title;
+          currentTab.rawData = parsed;
+          currentTab.content = content;
+          currentTab.sortRules = [];
+          currentTab.filterRules = {};
+        }
+
         showToast('손상된 JSON 구문 자동 복구 및 로드 성공');
       }
     } catch (err) {
       logEvent('FILE', 'file_load_fallback_to_text', { fileName, error: err.message });
       content = { text: text };
+
+      const currentTab = tabs.find((t) => t.id === activeTabId);
+      if (currentTab) {
+        currentTab.title = fileName || currentTab.title;
+        currentTab.content = content;
+      }
+
       showToast('텍스트 모드로 로드되었습니다 (JSON 파싱 불가)');
     }
   }
@@ -416,7 +567,7 @@
     applyRowHeight();
   }
 
-  /** svelte-jsoneditor 내부 툴바 슬롯 영역에 커스텀 컨트롤 부착 */
+  /** svelte-jsoneditor 내부 툴바 슬롯 영역에 커스텀 컨트롤 및 탭 바 부착 */
   function attachFontSizeControl() {
     if (!toolbarControlsEl) return;
     const placeholder = document.querySelector('.jse-font-size-slot-placeholder');
@@ -424,6 +575,16 @@
       if (placeholder.parentNode !== toolbarControlsEl.parentNode || toolbarControlsEl.nextSibling !== placeholder) {
         placeholder.parentNode.insertBefore(toolbarControlsEl, placeholder);
         placeholder.style.display = 'none';
+      }
+    }
+  }
+
+  function attachTabBar() {
+    if (!tabBarEl) return;
+    const menuContainer = document.querySelector('.jse-menu');
+    if (menuContainer && menuContainer.parentNode) {
+      if (tabBarEl.parentNode !== menuContainer.parentNode || menuContainer.nextSibling !== tabBarEl) {
+        menuContainer.parentNode.insertBefore(tabBarEl, menuContainer.nextSibling);
       }
     }
   }
@@ -440,6 +601,17 @@
       title: 'iMJSON',
       className: 'jse-brand-button',
       onClick: () => {}
+    };
+
+    const newFileButton = {
+      type: 'button',
+      text: 'NEW',
+      title: '새 문서 (NEW)',
+      className: 'jse-custom-btn new-doc-btn',
+      onClick: () => {
+        logEvent('BUTTON', 'click_new_file_menu_item');
+        createNewTab({}, null);
+      }
     };
 
     const openFileButton = {
@@ -460,6 +632,7 @@
       className: 'jse-custom-btn',
       onClick: () => {
         logEvent('BUTTON', 'open_font_modal');
+        loadSystemFonts();
         showFontModal = true;
       }
     };
@@ -477,11 +650,13 @@
 
     setTimeout(() => {
       attachFontSizeControl();
+      attachTabBar();
     }, 0);
 
     return [
       customBrandButton,
       separator,
+      newFileButton,
       openFileButton,
       fontSettingsButton,
       separator,
@@ -1018,7 +1193,6 @@
     loadFontSize();
     loadRowHeight();
     loadTheme();
-    loadSystemFonts();
     applyFonts();
     applyFontSize();
     applyRowHeight();
@@ -1026,7 +1200,15 @@
 
     setTimeout(() => {
       attachFontSizeControl();
+      attachTabBar();
     }, 50);
+  });
+
+  $effect(() => {
+    // 탭 렌더링 변경 감지 시 탭 바 위치 동기화
+    if (tabs.length) {
+      attachTabBar();
+    }
 
     const cleanupI18n = setupI18nObserver();
     const cleanupUX = setupSpreadsheetUX();
@@ -1046,8 +1228,13 @@
   function handleModeChange(newMode) {
     logEvent('NAVIGATION', 'change_editor_mode', { fromMode: mode, toMode: newMode });
     mode = newMode;
+    const currentTab = tabs.find((t) => t.id === activeTabId);
+    if (currentTab) {
+      currentTab.mode = newMode;
+    }
     setTimeout(() => {
       attachFontSizeControl();
+      attachTabBar();
       decorateTableHeaders();
     }, 50);
   }
@@ -1089,6 +1276,43 @@
       </div>
     </div>
   {/if}
+
+  <!-- 멀티 탭 바 UI -->
+  <div bind:this={tabBarEl} class="imjson-tab-bar">
+    <div class="tab-list">
+      {#each tabs as tab (tab.id)}
+        <div
+          class={clsx('tab-item', tab.id === activeTabId && 'active')}
+          onclick={() => switchTab(tab.id)}
+          onkeydown={(e) => e.key === 'Enter' && switchTab(tab.id)}
+          role="button"
+          tabindex="0"
+        >
+          <span class="tab-icon">📄</span>
+          <span class="tab-title" title={tab.title}>{tab.title}</span>
+          <button
+            type="button"
+            class="tab-close-btn"
+            onclick={(e) => {
+              e.stopPropagation();
+              closeTab(tab.id);
+            }}
+            title="탭 닫기"
+          >
+            &times;
+          </button>
+        </div>
+      {/each}
+      <button
+        type="button"
+        class="tab-add-btn"
+        onclick={() => createNewTab({}, null)}
+        title="새 문서 탭 추가"
+      >
+        + 새 문서
+      </button>
+    </div>
+  </div>
 
   <!-- 툴바 삽입용 커스텀 컨트롤 그룹 -->
   <div bind:this={toolbarControlsEl} class="jse-toolbar-controls">
@@ -1180,19 +1404,6 @@
       >
         {theme === 'light' ? '☀️ 라이트' : '🌙 다크'}
       </button>
-    </div>
-  </div>
-
-  <!-- 데이터 통계 서브 스탯바 -->
-  <div class="jse-stats-bar">
-    <div class="stats-item">
-      <span class="stats-label">용량:</span>
-      <span class="stats-value">{datasetMetrics.formattedSize}</span>
-    </div>
-    <div class="stats-divider"></div>
-    <div class="stats-item">
-      <span class="stats-label">노드/항목:</span>
-      <span class="stats-value">{datasetMetrics.nodeCount.toLocaleString()}개</span>
     </div>
   </div>
 
@@ -1538,6 +1749,19 @@
       onChangeMode={handleModeChange}
     />
   </main>
+
+  <!-- 데이터 통계 서브 스탯바 (VS Code UX 하단 배치) -->
+  <footer class="jse-stats-bar">
+    <div class="stats-item">
+      <span class="stats-label">용량:</span>
+      <span class="stats-value">{datasetMetrics.formattedSize}</span>
+    </div>
+    <div class="stats-divider"></div>
+    <div class="stats-item">
+      <span class="stats-label">노드/항목:</span>
+      <span class="stats-value">{datasetMetrics.nodeCount.toLocaleString()}개</span>
+    </div>
+  </footer>
 </div>
 
 <style>
@@ -1635,16 +1859,137 @@
     background-color: #1d4ed8;
   }
 
-  /* 서브 통계 바 스타일 */
+  /* 멀티 탭 바 스타일 */
+  .imjson-tab-bar {
+    display: flex;
+    align-items: center;
+    background-color: #f1f5f9;
+    border-bottom: 1px solid #cbd5e1;
+    padding: 2px 8px 0 8px;
+    overflow-x: auto;
+    font-size: 12px;
+  }
+
+  :global([data-theme="dark"]) .imjson-tab-bar {
+    background-color: #0f172a;
+    border-bottom-color: #334155;
+  }
+
+  .tab-list {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tab-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background-color: #e2e8f0;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    user-select: none;
+    max-width: 180px;
+    transition: background-color 0.12s, color 0.12s;
+  }
+
+  :global([data-theme="dark"]) .tab-item {
+    background-color: #1e293b;
+    color: #94a3b8;
+    border-color: #334155;
+  }
+
+  .tab-item:hover {
+    background-color: #cbd5e1;
+    color: #0f172a;
+  }
+
+  :global([data-theme="dark"]) .tab-item:hover {
+    background-color: #334155;
+    color: #f8fafc;
+  }
+
+  .tab-item.active {
+    background-color: #ffffff;
+    color: #2563eb;
+    font-weight: 700;
+    border-color: #cbd5e1;
+    border-bottom: 2px solid #2563eb;
+  }
+
+  :global([data-theme="dark"]) .tab-item.active {
+    background-color: #1e293b;
+    color: #38bdf8;
+    border-color: #334155;
+    border-bottom: 2px solid #38bdf8;
+  }
+
+  .tab-icon {
+    font-size: 11px;
+  }
+
+  .tab-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+  }
+
+  .tab-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .tab-close-btn:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .tab-add-btn {
+    background: transparent;
+    border: 1px dashed #cbd5e1;
+    color: #64748b;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 4px;
+    transition: all 0.12s;
+  }
+
+  :global([data-theme="dark"]) .tab-add-btn {
+    border-color: #475569;
+    color: #94a3b8;
+  }
+
+  .tab-add-btn:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+  }
+
+  /* 서브 통계 바 스타일 (VS Code Status Bar UX) */
   .jse-stats-bar {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 4px 16px;
     background-color: #1e293b;
-    border-bottom: 1px solid #334155;
+    border-top: 1px solid #334155;
     font-size: 12px;
     color: #94a3b8;
+    flex-shrink: 0;
   }
 
   .stats-item {
