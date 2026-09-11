@@ -437,6 +437,12 @@ export function setupI18nObserver() {
         }
       }
     });
+
+    // 8. hidden-input 요소의 aria-hidden 경고 방지
+    const hiddenInputs = document.querySelectorAll('.jse-hidden-input[aria-hidden="true"]');
+    hiddenInputs.forEach((input) => {
+      input.removeAttribute('aria-hidden');
+    });
   }
 
   // 초기 렌더링 시 번역 적용
