@@ -605,8 +605,8 @@
 
     const newFileButton = {
       type: 'button',
-      text: 'NEW',
-      title: '새 문서 (NEW)',
+      text: '새 문서',
+      title: '새 문서',
       className: 'jse-custom-btn new-doc-btn',
       onClick: () => {
         logEvent('BUTTON', 'click_new_file_menu_item');
