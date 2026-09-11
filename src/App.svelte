@@ -451,10 +451,12 @@
   function handleRenderMenu(items, context) {
     const translatedItems = onRenderMenu(items, context) || items;
 
-    const customBrandLabel = {
-      type: 'label',
+    const customBrandButton = {
+      type: 'button',
       text: 'iMJSON',
-      className: 'jse-brand-label'
+      title: 'iMJSON',
+      className: 'jse-brand-button',
+      onClick: () => {}
     };
 
     const openFileButton = {
@@ -495,7 +497,7 @@
     }, 0);
 
     return [
-      customBrandLabel,
+      customBrandButton,
       separator,
       openFileButton,
       fontSettingsButton,

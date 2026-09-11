@@ -330,30 +330,43 @@ pre,
   color: #ffffff;
 }
 
-/* 브랜딩 타이틀 */
+/* 브랜딩 버튼 로고 (클릭/호버/드래그 효과가 없는 단순 브랜드 표기용 버튼) */
+.jse-menu .jse-brand-button,
+.jse-menu .jse-brand-button:hover,
+.jse-menu .jse-brand-button:focus,
+.jse-menu .jse-brand-button:active,
 .jse-menu .jse-brand-label,
 .jse-menu .jse-brand-label:hover,
-.jse-menu .jse-brand-label:focus,
-.jse-menu .jse-brand-label:active,
-:root:not([data-theme="dark"]) .jse-menu .jse-brand-label,
-:root:not([data-theme="dark"]) .jse-menu .jse-brand-label:hover,
-[data-theme="dark"] .jse-menu .jse-brand-label,
-[data-theme="dark"] .jse-menu .jse-brand-label:hover {
+:root:not([data-theme="dark"]) .jse-menu .jse-brand-button,
+:root:not([data-theme="dark"]) .jse-menu .jse-brand-button:hover,
+:root:not([data-theme="dark"]) .jse-menu .jse-brand-button:focus,
+:root:not([data-theme="dark"]) .jse-menu .jse-brand-button:active,
+[data-theme="dark"] .jse-menu .jse-brand-button,
+[data-theme="dark"] .jse-menu .jse-brand-button:hover,
+[data-theme="dark"] .jse-menu .jse-brand-button:focus,
+[data-theme="dark"] .jse-menu .jse-brand-button:active {
   width: auto !important;
+  height: 34px !important;
   font-weight: 800 !important;
   font-size: 17px !important;
   padding: 0 10px !important;
-  background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  letter-spacing: 0 !important;
-  user-select: none !important;
-  cursor: default !important;
+  color: #0284c7 !important;
+  background: transparent !important;
   border: none !important;
   border-color: transparent !important;
   box-shadow: none !important;
   outline: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: default !important;
   opacity: 1 !important;
+}
+
+[data-theme="dark"] .jse-menu .jse-brand-button,
+[data-theme="dark"] .jse-menu .jse-brand-button:hover,
+[data-theme="dark"] .jse-menu .jse-brand-button:focus,
+[data-theme="dark"] .jse-menu .jse-brand-button:active {
+  color: #38bdf8 !important;
 }
 
 .jse-menu .jse-button.jse-group-button.jse-first {
