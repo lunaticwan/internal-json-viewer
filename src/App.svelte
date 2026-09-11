@@ -452,12 +452,9 @@
     const translatedItems = onRenderMenu(items, context) || items;
 
     const customBrandLabel = {
-      type: 'button',
+      type: 'label',
       text: 'iMJSON',
-      className: 'jse-brand-label',
-      onClick: () => {
-        logEvent('BUTTON', 'click_brand_label');
-      }
+      className: 'jse-brand-label'
     };
 
     const openFileButton = {

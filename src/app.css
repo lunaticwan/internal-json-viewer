@@ -333,8 +333,12 @@ pre,
 /* 브랜딩 타이틀 */
 .jse-menu .jse-brand-label,
 .jse-menu .jse-brand-label:hover,
+.jse-menu .jse-brand-label:focus,
+.jse-menu .jse-brand-label:active,
 :root:not([data-theme="dark"]) .jse-menu .jse-brand-label,
-[data-theme="dark"] .jse-menu .jse-brand-label {
+:root:not([data-theme="dark"]) .jse-menu .jse-brand-label:hover,
+[data-theme="dark"] .jse-menu .jse-brand-label,
+[data-theme="dark"] .jse-menu .jse-brand-label:hover {
   width: auto !important;
   font-weight: 800 !important;
   font-size: 17px !important;
@@ -347,6 +351,8 @@ pre,
   cursor: default !important;
   border: none !important;
   border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
   opacity: 1 !important;
 }
 
