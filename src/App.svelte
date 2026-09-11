@@ -1768,10 +1768,13 @@
   .container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    width: 100vw;
+    height: 100%;
+    height: 100dvh;
+    width: 100%;
+    width: 100dvw;
     background-color: #f8fafc;
     position: relative;
+    overflow: hidden;
   }
 
   /* 알림 토스트 UI */
@@ -1990,6 +1993,7 @@
     font-size: 12px;
     color: #94a3b8;
     flex-shrink: 0;
+    z-index: 10;
   }
 
   .stats-item {
@@ -2429,8 +2433,8 @@
 
   .editor-container {
     flex: 1;
+    min-height: 0;
     width: 100%;
-    height: 100vh;
     overflow: hidden;
   }
 

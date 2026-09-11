@@ -19,6 +19,7 @@
 html, body, #app {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   font-family: var(--app-font-ui);
   background-color: #f8fafc;
@@ -479,6 +480,99 @@ pre,
 .jse-font-size-select:hover {
   border-color: #38bdf8;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+/* ==========================================================================
+   모바일 반응형 툴바 및 레이아웃 (Mobile Responsive Toolbar & Layout)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .jse-menu {
+    min-height: 44px !important;
+    height: 44px !important;
+    padding: 4px 8px !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .jse-menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  .jse-menu > *,
+  .jse-menu button,
+  .jse-menu .jse-button,
+  .jse-menu .jse-separator,
+  .jse-toolbar-controls,
+  .jse-font-size-group,
+  .jse-row-height-group,
+  .jse-quick-action-group,
+  .jse-theme-group {
+    flex-shrink: 0 !important;
+  }
+
+  .jse-menu button,
+  .jse-menu .jse-button {
+    height: 32px !important;
+    min-width: 30px !important;
+    padding: 0 6px !important;
+    font-size: 12px !important;
+  }
+
+  .editor-container .jse-custom-btn {
+    height: 32px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+  }
+
+  .jse-menu .jse-button.jse-group-button {
+    height: 30px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+  }
+
+  .jse-font-size-group,
+  .jse-row-height-group,
+  .jse-sample-group,
+  .jse-theme-group {
+    height: 32px !important;
+    padding: 2px 4px !important;
+  }
+
+  .jse-control-label {
+    font-size: 11px !important;
+  }
+
+  .jse-font-size-btn,
+  .jse-font-size-select,
+  .jse-theme-toggle-btn {
+    height: 26px !important;
+    font-size: 11px !important;
+  }
+
+  .jse-action-chip {
+    height: 28px !important;
+    padding: 0 6px !important;
+    font-size: 11px !important;
+  }
+
+  .jse-menu .jse-brand-button,
+  .jse-menu .jse-brand-button:hover,
+  .jse-menu .jse-brand-button:focus,
+  .jse-menu .jse-brand-button:active {
+    height: 32px !important;
+    font-size: 15px !important;
+    padding: 0 6px !important;
+  }
+
+  .jse-menu .jse-separator {
+    height: 18px !important;
+    margin: 0 3px !important;
+  }
 }
 
 /* ==========================================================================
