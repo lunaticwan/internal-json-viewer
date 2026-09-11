@@ -1,7 +1,7 @@
 
 > imjson-editor@1.0.0 preview
-> vite preview --port 4173
+> vite preview
 
-10:34:12 AM [vite-plugin-svelte] no Svelte config found at /app - using default configuration.
+4:12:08 AM [vite-plugin-svelte] no Svelte config found at /app - using default configuration.
   ➜  Local:   http://localhost:4173/
   ➜  Network: use --host to expose
