@@ -13,7 +13,7 @@
     PRESET_CODE_FONTS,
     FONT_SIZES,
     ROW_HEIGHTS,
-    SAMPLE_PRESETS
+    DEFAULT_SAMPLE_DATA
   } from './constants/editor.js';
   import {
     repairJsonString,
@@ -86,7 +86,7 @@
   // ---------------------------------------------------------------------------
 
   /** 원본 JSON 데이터 저장소 */
-  let rawData = $state(SAMPLE_PRESETS[0].data);
+  let rawData = $state(DEFAULT_SAMPLE_DATA);
 
   /** 다중 정렬 규칙 배열 [{ key: 'category', dir: 'asc' }] */
   let sortRules = $state([]);
@@ -104,7 +104,7 @@
   let tempSelectedValues = $state(new Set());
 
   /** svelte-jsoneditor 전달용 content 바인딩 상태 */
-  let content = $state({ json: SAMPLE_PRESETS[0].data });
+  let content = $state({ json: DEFAULT_SAMPLE_DATA });
 
   /** 에디터 뷰 모드 및 파일 업로드 input 레퍼런스 */
   let mode = $state(Mode.tree);
@@ -140,23 +140,6 @@
     if (Array.isArray(rawData)) {
       const processed = getProcessedData(rawData, sortRules, filterRules);
       content = { json: processed };
-    }
-  }
-
-  /**
-   * 지정한 ID의 샘플 데이터 세트를 불러옴.
-   * @param {string} presetId - 샘플 데이터 프리셋 식별자
-   */
-  function loadSamplePreset(presetId) {
-    logEvent('BUTTON', 'load_sample_preset', { presetId });
-    const preset = SAMPLE_PRESETS.find((p) => p.id === presetId);
-    if (preset) {
-      rawData = preset.data;
-      sortRules = [];
-      filterRules = {};
-      uniqueValuesCache.clear();
-      content = { json: preset.data };
-      showToast(`'${preset.name}' 샘플 데이터 로드 완료`);
     }
   }
 
@@ -1109,21 +1092,6 @@
 
   <!-- 툴바 삽입용 커스텀 컨트롤 그룹 -->
   <div bind:this={toolbarControlsEl} class="jse-toolbar-controls">
-    <!-- 샘플 데이터 빠른 선택기 -->
-    <div class="jse-sample-group">
-      <span class="jse-control-label">샘플</span>
-      <select
-        class="jse-font-size-select jse-sample-select"
-        onchange={(e) => loadSamplePreset(e.target.value)}
-        title="테스트용 샘플 데이터 세트 불러오기"
-      >
-        <option value="" disabled selected>샘플 선택</option>
-        {#each SAMPLE_PRESETS as preset}
-          <option value={preset.id}>{preset.name}</option>
-        {/each}
-      </select>
-    </div>
-
     <!-- 폰트 크기 조절 -->
     <div class="jse-font-size-group">
       <span class="jse-control-label">크기</span>
