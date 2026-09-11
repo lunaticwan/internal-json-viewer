@@ -26,6 +26,7 @@
     parseRowHeight,
     parseFontSettings
   } from './utils/schemaUtils.js';
+  import { logEvent } from './utils/logger.js';
 
   // ---------------------------------------------------------------------------
   // [상태 관리: UI 커스텀 설정 및 모달]
@@ -72,6 +73,7 @@
    * @param {string} msg - 표시할 메시지
    */
   function showToast(msg) {
+    logEvent('TOAST', 'show_toast', { message: msg });
     toastMessage = msg;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
@@ -129,6 +131,11 @@
    * 데이터 정렬 및 필터 변경 사항 반영 및 content 동기화.
    */
   function updateProcessedContent() {
+    logEvent('DATA', 'update_processed_content', {
+      sortRules,
+      filterRulesKeys: Object.keys(filterRules),
+      rawDataIsArray: Array.isArray(rawData)
+    });
     uniqueValuesCache.clear();
     if (Array.isArray(rawData)) {
       const processed = getProcessedData(rawData, sortRules, filterRules);
@@ -141,6 +148,7 @@
    * @param {string} presetId - 샘플 데이터 프리셋 식별자
    */
   function loadSamplePreset(presetId) {
+    logEvent('BUTTON', 'load_sample_preset', { presetId });
     const preset = SAMPLE_PRESETS.find((p) => p.id === presetId);
     if (preset) {
       rawData = preset.data;
@@ -156,6 +164,7 @@
    * 파일 선택 다이얼로그를 호출함.
    */
   function triggerFileUpload() {
+    logEvent('BUTTON', 'trigger_file_upload');
     if (fileInput) fileInput.click();
   }
 
@@ -165,6 +174,7 @@
    * @param {string} [fileName=''] - 파일 이름
    */
   function handleFileContent(text, fileName = '') {
+    logEvent('FILE', 'handle_file_content', { fileName, textLength: text?.length });
     try {
       // 1. 표준 JSON 파싱 시도
       try {
@@ -176,6 +186,7 @@
         content = { json: parsed };
         showToast(`파일 로드 완료: ${fileName || 'JSON Data'}`);
       } catch (jsonErr) {
+        logEvent('FILE', 'json_parse_failed_trying_repair', { fileName, error: jsonErr.message });
         // 2. 파싱 실패 시 LLM JSON 수리 유틸리티로 자동 복구 시도
         const repairedText = repairJsonString(text);
         const parsed = JSON.parse(repairedText);
@@ -187,6 +198,7 @@
         showToast('손상된 JSON 구문 자동 복구 및 로드 성공');
       }
     } catch (err) {
+      logEvent('FILE', 'file_load_fallback_to_text', { fileName, error: err.message });
       content = { text: text };
       showToast('텍스트 모드로 로드되었습니다 (JSON 파싱 불가)');
     }
@@ -198,6 +210,7 @@
    */
   function handleFileUpload(event) {
     const file = event.target.files?.[0];
+    logEvent('FILE', 'file_input_change', { fileName: file?.name, fileSize: file?.size });
     if (!file) return;
 
     const reader = new FileReader();
@@ -234,6 +247,7 @@
       isDraggingFile = false;
 
       const files = e.dataTransfer?.files;
+      logEvent('FILE', 'file_drop', { fileCount: files?.length, fileName: files?.[0]?.name });
       if (files && files.length > 0) {
         const file = files[0];
         const reader = new FileReader();
@@ -263,6 +277,7 @@
   function handleCopyFormatted() {
     const targetData = content?.json !== undefined ? content.json : content?.text;
     const str = typeof targetData === 'string' ? targetData : JSON.stringify(targetData, null, 2);
+    logEvent('BUTTON', 'copy_formatted', { dataLength: str.length });
     navigator.clipboard.writeText(str);
     showToast('Formatted JSON 클립보드 복사 완료');
   }
@@ -271,12 +286,14 @@
   function handleCopyMinified() {
     const targetData = content?.json !== undefined ? content.json : content?.text;
     const str = typeof targetData === 'string' ? targetData : JSON.stringify(targetData);
+    logEvent('BUTTON', 'copy_minified', { dataLength: str.length });
     navigator.clipboard.writeText(str);
     showToast('Minified JSON 클립보드 복사 완료');
   }
 
   /** 에디터 내 텍스트 수동 JSON 자동 복구 실행 */
   function handleRepairJsonAction() {
+    logEvent('BUTTON', 'repair_json_action', { hasTextContent: Boolean(content?.text) });
     if (content?.text) {
       try {
         const repaired = repairJsonString(content.text);
@@ -285,6 +302,7 @@
         content = { json: parsed };
         showToast('JSON 구문 자동 복구 완료');
       } catch (err) {
+        logEvent('BUTTON', 'repair_json_failed', { error: err.message });
         alert('복구 중 오류 발생: ' + err.message);
       }
     } else {
@@ -298,6 +316,7 @@
 
   /** CSS 변수에 폰트 크기 반영 및 로컬 스토리지 저장 */
   function applyFontSize() {
+    logEvent('SETTING', 'apply_font_size', { fontSize });
     document.documentElement.style.setProperty('--app-font-size', `${fontSize}px`);
     document.documentElement.style.setProperty('--jse-font-size', `${fontSize}px`);
     document.documentElement.style.setProperty('--jse-font-size-mono', `${fontSize}px`);
@@ -310,6 +329,7 @@
 
   /** CSS 변수에 행 높이 반영 및 로컬 스토리지 저장 */
   function applyRowHeight() {
+    logEvent('SETTING', 'apply_row_height', { rowHeight });
     document.documentElement.style.setProperty('--app-row-height', rowHeight);
     try {
       localStorage.setItem('imjson_row_height', rowHeight);
@@ -320,6 +340,7 @@
 
   /** 테마 속성 적용 및 로컬 스토리지 저장 */
   function applyTheme() {
+    logEvent('SETTING', 'apply_theme', { theme });
     if (theme === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('jse-theme-dark');
@@ -336,7 +357,9 @@
 
   /** 라이트/다크 테마 토글 */
   function toggleTheme() {
-    theme = theme === 'light' ? 'dark' : 'light';
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    logEvent('BUTTON', 'toggle_theme', { from: theme, to: nextTheme });
+    theme = nextTheme;
     applyTheme();
   }
 
@@ -345,6 +368,7 @@
     try {
       const saved = localStorage.getItem('imjson_theme');
       theme = parseTheme(saved);
+      logEvent('SETTING', 'load_theme', { theme });
     } catch (err) {
       console.error('Failed to load theme:', err);
     }
@@ -355,6 +379,7 @@
     try {
       const saved = localStorage.getItem('imjson_font_size') || localStorage.getItem('imbank_font_size');
       fontSize = parseFontSize(saved);
+      logEvent('SETTING', 'load_font_size', { fontSize });
     } catch (err) {
       console.error('Failed to load font size:', err);
     }
@@ -365,6 +390,7 @@
     try {
       const saved = localStorage.getItem('imjson_row_height');
       rowHeight = parseRowHeight(saved);
+      logEvent('SETTING', 'load_row_height', { rowHeight });
     } catch (err) {
       console.error('Failed to load row height:', err);
     }
@@ -372,6 +398,7 @@
 
   /** 폰트 크기 감소 */
   function decreaseFontSize() {
+    logEvent('BUTTON', 'decrease_font_size', { currentFontSize: fontSize });
     const currentIndex = FONT_SIZES.indexOf(fontSize);
     if (currentIndex > 0) {
       fontSize = FONT_SIZES[currentIndex - 1];
@@ -381,6 +408,7 @@
 
   /** 폰트 크기 증가 */
   function increaseFontSize() {
+    logEvent('BUTTON', 'increase_font_size', { currentFontSize: fontSize });
     const currentIndex = FONT_SIZES.indexOf(fontSize);
     if (currentIndex < FONT_SIZES.length - 1) {
       fontSize = FONT_SIZES[currentIndex + 1];
@@ -391,6 +419,7 @@
   /** 폰트 크기 셀렉트 변경 처리 */
   function handleFontSizeSelect(e) {
     const val = parseInt(e.target.value, 10);
+    logEvent('BUTTON', 'select_font_size', { val });
     if (!isNaN(val)) {
       fontSize = val;
       applyFontSize();
@@ -400,6 +429,7 @@
   /** 행 높이 셀렉트 변경 처리 */
   function handleRowHeightSelect(e) {
     rowHeight = e.target.value;
+    logEvent('BUTTON', 'select_row_height', { rowHeight });
     applyRowHeight();
   }
 
@@ -425,7 +455,9 @@
       type: 'button',
       text: 'iMJSON',
       className: 'jse-brand-label',
-      onClick: () => {}
+      onClick: () => {
+        logEvent('BUTTON', 'click_brand_label');
+      }
     };
 
     const openFileButton = {
@@ -433,7 +465,10 @@
       text: '파일 열기',
       title: 'JSON 파일 열기',
       className: 'jse-custom-btn',
-      onClick: () => triggerFileUpload()
+      onClick: () => {
+        logEvent('BUTTON', 'click_open_file_menu_item');
+        triggerFileUpload();
+      }
     };
 
     const fontSettingsButton = {
@@ -442,6 +477,7 @@
       title: '폰트 설정',
       className: 'jse-custom-btn',
       onClick: () => {
+        logEvent('BUTTON', 'open_font_modal');
         showFontModal = true;
       }
     };
@@ -475,6 +511,14 @@
 
   /** 설정된 폰트 CSS 변수 적용 및 로컬 스토리지 저장 */
   function applyFonts() {
+    logEvent('SETTING', 'apply_fonts', {
+      selectedUiFontMode,
+      selectedUiFontValue,
+      customUiFont,
+      selectedCodeFontMode,
+      selectedCodeFontValue,
+      customCodeFont
+    });
     let uiFontCSS = '';
     if (selectedUiFontMode === 'custom') {
       const font = customUiFont.trim();
@@ -519,6 +563,7 @@
         const fontNames = Array.from(new Set(fontData.map((f) => f.family))).sort((a, b) => a.localeCompare(b));
         if (fontNames.length > 0) {
           systemFonts = fontNames;
+          logEvent('SETTING', 'load_system_fonts', { fontCount: fontNames.length });
         }
       }
     } catch (err) {
@@ -537,6 +582,7 @@
       selectedCodeFontMode = settings.selectedCodeFontMode;
       selectedCodeFontValue = settings.selectedCodeFontValue;
       customCodeFont = settings.customCodeFont;
+      logEvent('SETTING', 'load_font_settings', settings);
     } catch (err) {
       console.error('Failed to load font settings:', err);
     }
@@ -570,6 +616,7 @@
 
   /** 테이블 헤더 정렬/필터 드롭다운 팝업 열기 */
   function openHeaderMenu(colKey, targetEl) {
+    logEvent('TABLE', 'open_header_menu', { colKey });
     const rect = targetEl.getBoundingClientRect();
     activeMenuCol = colKey;
     menuPos = {
@@ -588,11 +635,13 @@
 
   /** 테이블 헤더 드롭다운 팝업 닫기 */
   function closeHeaderMenu() {
+    logEvent('TABLE', 'close_header_menu', { colKey: activeMenuCol });
     activeMenuCol = null;
   }
 
   /** 단일 정렬 처리 */
   function handleSingleSort(colKey, dir) {
+    logEvent('TABLE', 'single_sort', { colKey, dir });
     sortRules = [{ key: colKey, dir }];
     updateProcessedContent();
     closeHeaderMenu();
@@ -600,6 +649,7 @@
 
   /** 다중 정렬 규칙 추가 처리 */
   function handleAddMultiSort(colKey, dir) {
+    logEvent('TABLE', 'add_multi_sort', { colKey, dir });
     const existingIdx = sortRules.findIndex((r) => r.key === colKey);
     if (existingIdx >= 0) {
       sortRules[existingIdx].dir = dir;
@@ -612,6 +662,7 @@
 
   /** 단일 컬럼 정렬 해제 */
   function handleClearSort(colKey) {
+    logEvent('TABLE', 'clear_sort', { colKey });
     sortRules = sortRules.filter((r) => r.key !== colKey);
     updateProcessedContent();
     closeHeaderMenu();
@@ -619,6 +670,7 @@
 
   /** 모든 정렬 및 필터 초기화 */
   function handleClearAllSortAndFilter() {
+    logEvent('BUTTON', 'clear_all_sort_and_filter');
     sortRules = [];
     filterRules = {};
     updateProcessedContent();
@@ -628,6 +680,8 @@
   /** 필터 팝업 내 전체 값 선택/해제 토글 */
   function toggleSelectAllValues(colKey) {
     const allVals = getUniqueValuesForColumn(colKey);
+    const willSelectAll = tempSelectedValues.size !== allVals.length;
+    logEvent('TABLE', 'toggle_select_all_values', { colKey, willSelectAll });
     if (tempSelectedValues.size === allVals.length) {
       tempSelectedValues = new Set();
     } else {
@@ -637,6 +691,7 @@
 
   /** 개별 값 선택/해제 토글 */
   function toggleValueSelection(val) {
+    logEvent('TABLE', 'toggle_value_selection', { val, wasSelected: tempSelectedValues.has(val) });
     const next = new Set(tempSelectedValues);
     if (next.has(val)) {
       next.delete(val);
@@ -648,6 +703,7 @@
 
   /** 선택한 값 필터 규칙 적용 */
   function applyColumnFilter(colKey) {
+    logEvent('TABLE', 'apply_column_filter', { colKey, selectedCount: tempSelectedValues.size });
     const allVals = getUniqueValuesForColumn(colKey);
     if (tempSelectedValues.size === allVals.length) {
       delete filterRules[colKey];
@@ -664,6 +720,7 @@
 
   /** 단일 컬럼 필터 해제 */
   function clearColumnFilter(colKey) {
+    logEvent('TABLE', 'clear_column_filter', { colKey });
     delete filterRules[colKey];
     filterRules = { ...filterRules };
     updateProcessedContent();
@@ -756,6 +813,7 @@
           e.preventDefault();
           e.stopPropagation();
 
+          logEvent('TABLE', 'start_column_resize', { colName });
           const startX = e.clientX;
           const startWidth = th.offsetWidth;
           const colIndex = Array.from(th.parentNode.children).indexOf(th);
@@ -782,6 +840,7 @@
           };
 
           const onMouseUp = () => {
+            logEvent('TABLE', 'end_column_resize', { colName, finalWidth: th.style.width });
             resizer.classList.remove('resizing');
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', onMouseUp);
@@ -822,6 +881,7 @@
 
   /** 지정한 좌표 (행, 열)의 셀을 활성화하고 편집 상태로 전환 */
   function activateCellAt(rowIndex, colIndex) {
+    logEvent('SPREADSHEET', 'activate_cell', { rowIndex, colIndex });
     const rows = Array.from(document.querySelectorAll('.jse-table-mode tr.jse-table-row'));
     if (rowIndex < 0 || rowIndex >= rows.length) return;
 
@@ -861,6 +921,7 @@
               row: rows.indexOf(row),
               col: cells.indexOf(td)
             };
+            logEvent('SPREADSHEET', 'cell_click', { activeCell: currentActiveCellIndex });
           }
         }
 
@@ -879,11 +940,13 @@
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
         if (!target.classList.contains('jse-hidden-input')) {
+          logEvent('SPREADSHEET', 'focus_in_input', { tagName: target.tagName, className: target.className });
           setTimeout(() => {
             target.select?.();
           }, 10);
         }
       } else if (target.isContentEditable || target.classList.contains('cm-content')) {
+        logEvent('SPREADSHEET', 'focus_in_editable', { className: target.className });
         setTimeout(() => {
           const range = document.createRange();
           range.selectNodeContents(target);
@@ -924,6 +987,7 @@
           }
         }
 
+        logEvent('NAVIGATION', 'tab_key_navigate', { prevCell: currentActiveCellIndex, nextCell: { row, col }, shiftKey: e.shiftKey });
         activateCellAt(row, col);
         return;
       }
@@ -945,6 +1009,7 @@
           if (e.key === 'ArrowDown') row += 1;
           if (e.key === 'ArrowUp') row -= 1;
 
+          logEvent('NAVIGATION', 'arrow_key_navigate', { key: e.key, prevCell: currentActiveCellIndex, nextCell: { row, col } });
           activateCellAt(row, col);
         }
       }
@@ -966,6 +1031,7 @@
   // ---------------------------------------------------------------------------
 
   onMount(() => {
+    logEvent('LIFECYCLE', 'app_mounted');
     loadFontSettings();
     loadFontSize();
     loadRowHeight();
@@ -986,6 +1052,7 @@
     const cleanupDragDrop = setupDragAndDrop();
 
     return () => {
+      logEvent('LIFECYCLE', 'app_unmounted');
       cleanupI18n();
       cleanupUX();
       cleanupHeader();
@@ -995,6 +1062,7 @@
 
   /** 에디터 모드 변경 처리 */
   function handleModeChange(newMode) {
+    logEvent('NAVIGATION', 'change_editor_mode', { fromMode: mode, toMode: newMode });
     mode = newMode;
     setTimeout(() => {
       attachFontSizeControl();
@@ -1004,6 +1072,11 @@
 
   /** 에디터 내부 데이터 내용 변경 처리 */
   function handleContentChange(newContent, previousContent, changeStatus) {
+    logEvent('EDITOR', 'handle_content_change', {
+      changeStatus,
+      hasJson: newContent?.json !== undefined,
+      hasText: newContent?.text !== undefined
+    });
     uniqueValuesCache.clear();
     if (newContent && newContent.json !== undefined) {
       rawData = newContent.json;
@@ -1158,40 +1231,98 @@
 
   <!-- 폰트 설정 모달 -->
   {#if showFontModal}
-    <div class="modal-backdrop" onclick={() => (showFontModal = false)} onkeydown={(e) => e.key === 'Escape' && (showFontModal = false)} role="presentation" tabindex="-1">
+    <div
+      class="modal-backdrop"
+      onclick={() => {
+        logEvent('BUTTON', 'close_font_modal_backdrop');
+        showFontModal = false;
+      }}
+      onkeydown={(e) => {
+        if (e.key === 'Escape') {
+          logEvent('BUTTON', 'close_font_modal_key');
+          showFontModal = false;
+        }
+      }}
+      role="presentation"
+      tabindex="-1"
+    >
       <div class="modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
         <div class="modal-header">
           <h2 id="modal-title">폰트 설정</h2>
-          <button class="close-btn" onclick={() => (showFontModal = false)} aria-label="닫기">&times;</button>
+          <button class="close-btn" onclick={() => {
+            logEvent('BUTTON', 'close_font_modal_btn');
+            showFontModal = false;
+          }} aria-label="닫기">&times;</button>
         </div>
         <div class="modal-body">
           <div class="font-section">
             <h3>기본 UI 폰트 (메뉴 및 레이아웃)</h3>
             <div class="mode-selector">
               <label>
-                <input type="radio" name="uiFontMode" value="preset" bind:group={selectedUiFontMode} onchange={applyFonts} />
+                <input
+                  type="radio"
+                  name="uiFontMode"
+                  value="preset"
+                  bind:group={selectedUiFontMode}
+                  onchange={() => {
+                    logEvent('SETTING', 'select_ui_font_mode', { mode: 'preset' });
+                    applyFonts();
+                  }}
+                />
                 프리셋
               </label>
               {#if systemFonts.length > 0}
                 <label>
-                  <input type="radio" name="uiFontMode" value="system" bind:group={selectedUiFontMode} onchange={applyFonts} />
+                  <input
+                    type="radio"
+                    name="uiFontMode"
+                    value="system"
+                    bind:group={selectedUiFontMode}
+                    onchange={() => {
+                      logEvent('SETTING', 'select_ui_font_mode', { mode: 'system' });
+                      applyFonts();
+                    }}
+                  />
                   시스템 폰트 ({systemFonts.length}개)
                 </label>
               {/if}
               <label>
-                <input type="radio" name="uiFontMode" value="custom" bind:group={selectedUiFontMode} onchange={applyFonts} />
+                <input
+                  type="radio"
+                  name="uiFontMode"
+                  value="custom"
+                  bind:group={selectedUiFontMode}
+                  onchange={() => {
+                    logEvent('SETTING', 'select_ui_font_mode', { mode: 'custom' });
+                    applyFonts();
+                  }}
+                />
                 직접 입력
               </label>
             </div>
 
             {#if selectedUiFontMode === 'preset'}
-              <select bind:value={selectedUiFontValue} onchange={applyFonts} class="font-select">
+              <select
+                bind:value={selectedUiFontValue}
+                onchange={() => {
+                  logEvent('SETTING', 'select_ui_font_value', { value: selectedUiFontValue });
+                  applyFonts();
+                }}
+                class="font-select"
+              >
                 {#each PRESET_UI_FONTS as font}
                   <option value={font.value}>{font.label}</option>
                 {/each}
               </select>
             {:else if selectedUiFontMode === 'system'}
-              <select bind:value={selectedUiFontValue} onchange={applyFonts} class="font-select">
+              <select
+                bind:value={selectedUiFontValue}
+                onchange={() => {
+                  logEvent('SETTING', 'select_ui_font_value', { value: selectedUiFontValue });
+                  applyFonts();
+                }}
+                class="font-select"
+              >
                 {#each systemFonts as fontName}
                   <option value={fontName}>{fontName}</option>
                 {/each}
@@ -1200,7 +1331,10 @@
               <input
                 type="text"
                 bind:value={customUiFont}
-                oninput={applyFonts}
+                oninput={() => {
+                  logEvent('SETTING', 'input_custom_ui_font', { font: customUiFont });
+                  applyFonts();
+                }}
                 placeholder="예: Pretendard, Malgun Gothic"
                 class="font-input"
               />
@@ -1211,29 +1345,70 @@
             <h3>코드 폰트 (데이터 및 에디터 편집 영역)</h3>
             <div class="mode-selector">
               <label>
-                <input type="radio" name="codeFontMode" value="preset" bind:group={selectedCodeFontMode} onchange={applyFonts} />
+                <input
+                  type="radio"
+                  name="codeFontMode"
+                  value="preset"
+                  bind:group={selectedCodeFontMode}
+                  onchange={() => {
+                    logEvent('SETTING', 'select_code_font_mode', { mode: 'preset' });
+                    applyFonts();
+                  }}
+                />
                 프리셋
               </label>
               {#if systemFonts.length > 0}
                 <label>
-                  <input type="radio" name="codeFontMode" value="system" bind:group={selectedCodeFontMode} onchange={applyFonts} />
+                  <input
+                    type="radio"
+                    name="codeFontMode"
+                    value="system"
+                    bind:group={selectedCodeFontMode}
+                    onchange={() => {
+                      logEvent('SETTING', 'select_code_font_mode', { mode: 'system' });
+                      applyFonts();
+                    }}
+                  />
                   시스템 폰트 ({systemFonts.length}개)
                 </label>
               {/if}
               <label>
-                <input type="radio" name="codeFontMode" value="custom" bind:group={selectedCodeFontMode} onchange={applyFonts} />
+                <input
+                  type="radio"
+                  name="codeFontMode"
+                  value="custom"
+                  bind:group={selectedCodeFontMode}
+                  onchange={() => {
+                    logEvent('SETTING', 'select_code_font_mode', { mode: 'custom' });
+                    applyFonts();
+                  }}
+                />
                 직접 입력
               </label>
             </div>
 
             {#if selectedCodeFontMode === 'preset'}
-              <select bind:value={selectedCodeFontValue} onchange={applyFonts} class="font-select">
+              <select
+                bind:value={selectedCodeFontValue}
+                onchange={() => {
+                  logEvent('SETTING', 'select_code_font_value', { value: selectedCodeFontValue });
+                  applyFonts();
+                }}
+                class="font-select"
+              >
                 {#each PRESET_CODE_FONTS as font}
                   <option value={font.value}>{font.label}</option>
                 {/each}
               </select>
             {:else if selectedCodeFontMode === 'system'}
-              <select bind:value={selectedCodeFontValue} onchange={applyFonts} class="font-select">
+              <select
+                bind:value={selectedCodeFontValue}
+                onchange={() => {
+                  logEvent('SETTING', 'select_code_font_value', { value: selectedCodeFontValue });
+                  applyFonts();
+                }}
+                class="font-select"
+              >
                 {#each systemFonts as fontName}
                   <option value={fontName}>{fontName}</option>
                 {/each}
@@ -1242,7 +1417,10 @@
               <input
                 type="text"
                 bind:value={customCodeFont}
-                oninput={applyFonts}
+                oninput={() => {
+                  logEvent('SETTING', 'input_custom_code_font', { font: customCodeFont });
+                  applyFonts();
+                }}
                 placeholder="예: Cascadia Code, Consolas"
                 class="font-input"
               />
@@ -1261,7 +1439,10 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-primary" onclick={() => (showFontModal = false)}>확인</button>
+          <button class="btn btn-primary" onclick={() => {
+            logEvent('BUTTON', 'confirm_font_modal');
+            showFontModal = false;
+          }}>확인</button>
         </div>
       </div>
     </div>
@@ -1336,6 +1517,7 @@
             type="text"
             class="filter-search-input"
             bind:value={filterSearchQuery}
+            oninput={() => logEvent('TABLE', 'filter_search_query_input', { query: filterSearchQuery })}
             placeholder="🔍 값 검색..."
           />
 
