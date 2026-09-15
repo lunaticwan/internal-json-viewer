@@ -1758,8 +1758,23 @@
     </div>
     <div class="stats-divider"></div>
     <div class="stats-item">
-      <span class="stats-label">노드/항목:</span>
+      <span class="stats-label">노드:</span>
       <span class="stats-value">{datasetMetrics.nodeCount.toLocaleString()}개</span>
+    </div>
+    <div class="stats-divider"></div>
+    <div class="stats-item">
+      <span class="stats-label">키/값:</span>
+      <span class="stats-value">{datasetMetrics.keyCount.toLocaleString()} / {datasetMetrics.valueCount.toLocaleString()}</span>
+    </div>
+    <div class="stats-divider"></div>
+    <div class="stats-item">
+      <span class="stats-label">모드:</span>
+      <span class="stats-value">{mode}</span>
+    </div>
+    <div class="stats-divider"></div>
+    <div class="stats-item">
+      <span class="stats-label">폰트 크기:</span>
+      <span class="stats-value">{fontSize}px</span>
     </div>
   </footer>
 </div>
