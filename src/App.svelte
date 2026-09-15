@@ -117,6 +117,16 @@
   // [상태 관리: 멀티 탭 관리 (Multi-Tab)]
   // ---------------------------------------------------------------------------
 
+  /** 날짜 및 시각 포맷 유틸리티 (YYYY-MM-DD HH:mm:ss) */
+  function formatDate(timestamp) {
+    if (!timestamp) return '-';
+    const d = new Date(timestamp);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  const initialTime = Date.now();
+
   /** 탭 목록 상태 배열 */
   let tabs = $state([
     {
@@ -126,7 +136,9 @@
       content: { json: DEFAULT_SAMPLE_DATA },
       sortRules: [],
       filterRules: {},
-      mode: Mode.tree
+      mode: Mode.tree,
+      createdAt: initialTime,
+      updatedAt: initialTime
     }
   ]);
 
@@ -172,6 +184,9 @@
       currentTab.content = content;
       currentTab.sortRules = sortRules;
       currentTab.filterRules = filterRules;
+      if (sortRules.length > 0 || Object.keys(filterRules).length > 0) {
+        currentTab.updatedAt = Date.now();
+      }
     }
   }
 
@@ -218,7 +233,8 @@
   function createNewTab(initialData = {}, titleName = null) {
     saveCurrentTabState();
     tabCounter += 1;
-    const newTabId = `tab-${Date.now()}-${tabCounter}`;
+    const now = Date.now();
+    const newTabId = `tab-${now}-${tabCounter}`;
     const newTitle = titleName || `새 문서 ${tabCounter}`;
     const defaultContent = typeof initialData === 'string' ? { text: initialData } : { json: initialData };
     const newTab = {
@@ -228,7 +244,9 @@
       content: defaultContent,
       sortRules: [],
       filterRules: {},
-      mode: Mode.tree
+      mode: Mode.tree,
+      createdAt: now,
+      updatedAt: now
     };
     tabs = [...tabs, newTab];
     loadTabState(newTabId);
@@ -240,7 +258,8 @@
     logEvent('TAB', 'close_tab', { tabId });
     if (tabs.length === 1) {
       tabCounter += 1;
-      const newTabId = `tab-${Date.now()}-${tabCounter}`;
+      const now = Date.now();
+      const newTabId = `tab-${now}-${tabCounter}`;
       const newTitle = `새 문서 ${tabCounter}`;
       const newTab = {
         id: newTabId,
@@ -249,7 +268,9 @@
         content: { json: {} },
         sortRules: [],
         filterRules: {},
-        mode: Mode.tree
+        mode: Mode.tree,
+        createdAt: now,
+        updatedAt: now
       };
       tabs = [newTab];
       loadTabState(newTabId);
@@ -282,6 +303,7 @@
    */
   function handleFileContent(text, fileName = '') {
     logEvent('FILE', 'handle_file_content', { fileName, textLength: text?.length });
+    const now = Date.now();
     try {
       // 1. 표준 JSON 파싱 시도
       try {
@@ -299,6 +321,8 @@
           currentTab.content = content;
           currentTab.sortRules = [];
           currentTab.filterRules = {};
+          currentTab.createdAt = now;
+          currentTab.updatedAt = now;
         }
 
         showToast(`파일 로드 완료: ${fileName || 'JSON Data'}`);
@@ -320,6 +344,8 @@
           currentTab.content = content;
           currentTab.sortRules = [];
           currentTab.filterRules = {};
+          currentTab.createdAt = now;
+          currentTab.updatedAt = now;
         }
 
         showToast('손상된 JSON 구문 자동 복구 및 로드 성공');
@@ -332,6 +358,8 @@
       if (currentTab) {
         currentTab.title = fileName || currentTab.title;
         currentTab.content = content;
+        currentTab.createdAt = now;
+        currentTab.updatedAt = now;
       }
 
       showToast('텍스트 모드로 로드되었습니다 (JSON 파싱 불가)');
@@ -1253,6 +1281,14 @@
     } else {
       content = newContent;
     }
+
+    // 실제 사용자가 내용을 변경한 경우(contentChanged)에만 updatedAt 갱신
+    if (changeStatus?.contentChanged) {
+      const currentTab = tabs.find((t) => t.id === activeTabId);
+      if (currentTab) {
+        currentTab.updatedAt = Date.now();
+      }
+    }
   }
 </script>
 
@@ -1751,17 +1787,45 @@
   </main>
 
   <!-- 데이터 통계 서브 스탯바 (VS Code UX 하단 배치) -->
-  <footer class="jse-stats-bar">
-    <div class="stats-item">
-      <span class="stats-label">용량:</span>
-      <span class="stats-value">{datasetMetrics.formattedSize}</span>
-    </div>
-    <div class="stats-divider"></div>
-    <div class="stats-item">
-      <span class="stats-label">노드/항목:</span>
-      <span class="stats-value">{datasetMetrics.nodeCount.toLocaleString()}개</span>
-    </div>
-  </footer>
+  {#key activeTabId}
+    {@const activeTab = tabs.find((t) => t.id === activeTabId)}
+    <footer class="jse-stats-bar">
+      <div class="stats-item">
+        <span class="stats-label">용량:</span>
+        <span class="stats-value">{datasetMetrics.formattedSize}</span>
+      </div>
+      <div class="stats-divider"></div>
+      <div class="stats-item">
+        <span class="stats-label">글자 수:</span>
+        <span class="stats-value">{datasetMetrics.charCount.toLocaleString()}자</span>
+      </div>
+      <div class="stats-divider"></div>
+      <div class="stats-item">
+        <span class="stats-label">노드:</span>
+        <span class="stats-value">{datasetMetrics.nodeCount.toLocaleString()}개</span>
+      </div>
+      <div class="stats-divider"></div>
+      <div class="stats-item">
+        <span class="stats-label">키/값:</span>
+        <span class="stats-value">{datasetMetrics.keyCount.toLocaleString()} / {datasetMetrics.valueCount.toLocaleString()}</span>
+      </div>
+      <div class="stats-divider"></div>
+      <div class="stats-item">
+        <span class="stats-label">추정 토큰:</span>
+        <span class="stats-value">{datasetMetrics.estimatedTokens.toLocaleString()}</span>
+      </div>
+      <div class="stats-divider"></div>
+      <div class="stats-item">
+        <span class="stats-label">최초 생성:</span>
+        <span class="stats-value">{formatDate(activeTab?.createdAt)}</span>
+      </div>
+      <div class="stats-divider"></div>
+      <div class="stats-item">
+        <span class="stats-label">최종 변경:</span>
+        <span class="stats-value">{formatDate(activeTab?.updatedAt)}</span>
+      </div>
+    </footer>
+  {/key}
 </div>
 
 <style>
