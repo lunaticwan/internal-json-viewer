@@ -309,6 +309,7 @@ export function calculateDatasetMetrics(data) {
   traverse(data);
 
   const jsonStr = typeof data === 'string' ? data : JSON.stringify(data);
+  const charCount = jsonStr.length;
   const byteSize = new Blob([jsonStr]).size;
 
   let formattedSize = `${byteSize} B`;
@@ -322,6 +323,7 @@ export function calculateDatasetMetrics(data) {
     nodeCount,
     keyCount,
     valueCount,
+    charCount,
     byteSize,
     formattedSize,
     estimatedTokens: estimateTokens(jsonStr)
