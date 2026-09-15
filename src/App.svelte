@@ -184,7 +184,9 @@
       currentTab.content = content;
       currentTab.sortRules = sortRules;
       currentTab.filterRules = filterRules;
-      currentTab.updatedAt = Date.now();
+      if (sortRules.length > 0 || Object.keys(filterRules).length > 0) {
+        currentTab.updatedAt = Date.now();
+      }
     }
   }
 
@@ -301,6 +303,7 @@
    */
   function handleFileContent(text, fileName = '') {
     logEvent('FILE', 'handle_file_content', { fileName, textLength: text?.length });
+    const now = Date.now();
     try {
       // 1. 표준 JSON 파싱 시도
       try {
@@ -318,7 +321,8 @@
           currentTab.content = content;
           currentTab.sortRules = [];
           currentTab.filterRules = {};
-          currentTab.updatedAt = Date.now();
+          currentTab.createdAt = now;
+          currentTab.updatedAt = now;
         }
 
         showToast(`파일 로드 완료: ${fileName || 'JSON Data'}`);
@@ -340,7 +344,8 @@
           currentTab.content = content;
           currentTab.sortRules = [];
           currentTab.filterRules = {};
-          currentTab.updatedAt = Date.now();
+          currentTab.createdAt = now;
+          currentTab.updatedAt = now;
         }
 
         showToast('손상된 JSON 구문 자동 복구 및 로드 성공');
@@ -353,7 +358,8 @@
       if (currentTab) {
         currentTab.title = fileName || currentTab.title;
         currentTab.content = content;
-        currentTab.updatedAt = Date.now();
+        currentTab.createdAt = now;
+        currentTab.updatedAt = now;
       }
 
       showToast('텍스트 모드로 로드되었습니다 (JSON 파싱 불가)');
@@ -1275,9 +1281,13 @@
     } else {
       content = newContent;
     }
-    const currentTab = tabs.find((t) => t.id === activeTabId);
-    if (currentTab) {
-      currentTab.updatedAt = Date.now();
+
+    // 실제 사용자가 내용을 변경한 경우(contentChanged)에만 updatedAt 갱신
+    if (changeStatus?.contentChanged) {
+      const currentTab = tabs.find((t) => t.id === activeTabId);
+      if (currentTab) {
+        currentTab.updatedAt = Date.now();
+      }
     }
   }
 </script>
