@@ -151,6 +151,146 @@
   /** 탭 바 Element 레퍼런스 */
   let tabBarEl = $state();
 
+  /** 탭 제목 수정 상태 관리 */
+  let editingTabId = $state(null);
+  let editingTitle = $state('');
+
+  /** 탭 드래그 앤 드롭 순서 변경 상태 관리 */
+  let draggedTabId = $state(null);
+  let dragOverTabId = $state(null);
+
+  /**
+   * 탭 드래그 시작 핸들러
+   * @param {DragEvent} e - 드래그 이벤트
+   * @param {string} tabId - 드래그 중인 탭 ID
+   */
+  function handleTabDragStart(e, tabId) {
+    if (editingTabId === tabId) {
+      e.preventDefault();
+      return;
+    }
+    draggedTabId = tabId;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', tabId);
+    logEvent('TAB', 'start_drag_tab', { tabId });
+  }
+
+  /**
+   * 탭 드래그 오버 핸들러
+   * @param {DragEvent} e - 드래그 이벤트
+   * @param {string} tabId - 타겟 탭 ID
+   */
+  function handleTabDragOver(e, tabId) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedTabId && draggedTabId !== tabId) {
+      dragOverTabId = tabId;
+    }
+  }
+
+  /**
+   * 탭 드래그 이탈 핸들러
+   * @param {DragEvent} e - 드래그 이벤트
+   * @param {string} tabId - 타겟 탭 ID
+   */
+  function handleTabDragLeave(e, tabId) {
+    if (dragOverTabId === tabId) {
+      dragOverTabId = null;
+    }
+  }
+
+  /**
+   * 탭 드롭 핸들러 (순서 재배치)
+   * @param {DragEvent} e - 드래그 이벤트
+   * @param {string} targetTabId - 드롭 타겟 탭 ID
+   */
+  function handleTabDrop(e, targetTabId) {
+    e.preventDefault();
+    if (!draggedTabId || draggedTabId === targetTabId) {
+      draggedTabId = null;
+      dragOverTabId = null;
+      return;
+    }
+
+    const fromIndex = tabs.findIndex((t) => t.id === draggedTabId);
+    const toIndex = tabs.findIndex((t) => t.id === targetTabId);
+
+    if (fromIndex !== -1 && toIndex !== -1) {
+      const newTabs = [...tabs];
+      const [movedTab] = newTabs.splice(fromIndex, 1);
+      newTabs.splice(toIndex, 0, movedTab);
+      tabs = newTabs;
+      logEvent('TAB', 'reorder_tab', { draggedTabId, targetTabId, fromIndex, toIndex });
+    }
+
+    draggedTabId = null;
+    dragOverTabId = null;
+  }
+
+  /** 탭 드래그 종료 핸들러 */
+  function handleTabDragEnd() {
+    draggedTabId = null;
+    dragOverTabId = null;
+  }
+
+  /**
+   * 탭 제목 수정 시작
+   * @param {string} tabId - 수정할 탭 ID
+   * @param {string} currentTitle - 현재 탭 제목
+   */
+  function startRenamingTab(tabId, currentTitle) {
+    editingTabId = tabId;
+    editingTitle = currentTitle;
+    logEvent('TAB', 'start_rename_tab', { tabId, currentTitle });
+  }
+
+  /**
+   * 탭 제목 저장
+   * @param {string} tabId - 저장할 탭 ID
+   */
+  function saveTabTitle(tabId) {
+    if (editingTabId !== tabId) return;
+    const targetTab = tabs.find((t) => t.id === tabId);
+    const trimmed = editingTitle.trim();
+    if (targetTab && trimmed) {
+      targetTab.title = trimmed;
+      targetTab.updatedAt = Date.now();
+      logEvent('TAB', 'save_rename_tab', { tabId, newTitle: trimmed });
+    }
+    editingTabId = null;
+    editingTitle = '';
+  }
+
+  /** 탭 제목 수정 취소 */
+  function cancelRenamingTab() {
+    logEvent('TAB', 'cancel_rename_tab', { tabId: editingTabId });
+    editingTabId = null;
+    editingTitle = '';
+  }
+
+  /**
+   * 탭 제목 입력창 키 다운 핸들러
+   * @param {KeyboardEvent} e - 키보드 이벤트
+   * @param {string} tabId - 탭 ID
+   */
+  function handleTitleKeyDown(e, tabId) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      saveTabTitle(tabId);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelRenamingTab();
+    }
+  }
+
+  /** 입력 엘리먼트 자동 포커스 및 선택 액션 */
+  function autoFocus(node) {
+    node.focus();
+    node.select();
+  }
+
   // ---------------------------------------------------------------------------
   // [파생 상태 (Derived State)]
   // ---------------------------------------------------------------------------
@@ -1318,14 +1458,39 @@
     <div class="tab-list">
       {#each tabs as tab (tab.id)}
         <div
-          class={clsx('tab-item', tab.id === activeTabId && 'active')}
+          class={clsx(
+            'tab-item',
+            tab.id === activeTabId && 'active',
+            tab.id === draggedTabId && 'dragging',
+            tab.id === dragOverTabId && 'drag-over'
+          )}
           onclick={() => switchTab(tab.id)}
+          ondblclick={() => startRenamingTab(tab.id, tab.title)}
           onkeydown={(e) => e.key === 'Enter' && switchTab(tab.id)}
+          draggable={editingTabId !== tab.id}
+          ondragstart={(e) => handleTabDragStart(e, tab.id)}
+          ondragover={(e) => handleTabDragOver(e, tab.id)}
+          ondragleave={(e) => handleTabDragLeave(e, tab.id)}
+          ondrop={(e) => handleTabDrop(e, tab.id)}
+          ondragend={handleTabDragEnd}
           role="button"
           tabindex="0"
         >
           <span class="tab-icon">📄</span>
-          <span class="tab-title" title={tab.title}>{tab.title}</span>
+          {#if editingTabId === tab.id}
+            <input
+              type="text"
+              use:autoFocus
+              class="tab-title-input"
+              bind:value={editingTitle}
+              onkeydown={(e) => handleTitleKeyDown(e, tab.id)}
+              onblur={() => saveTabTitle(tab.id)}
+              onclick={(e) => e.stopPropagation()}
+              ondblclick={(e) => e.stopPropagation()}
+            />
+          {:else}
+            <span class="tab-title" title={tab.title}>{tab.title}</span>
+          {/if}
           <button
             type="button"
             class="tab-close-btn"
@@ -1961,7 +2126,7 @@
     cursor: pointer;
     user-select: none;
     max-width: 180px;
-    transition: background-color 0.12s, color 0.12s;
+    transition: all 0.15s ease-in-out;
   }
 
   :global([data-theme="dark"]) .tab-item {
@@ -1978,6 +2143,18 @@
   :global([data-theme="dark"]) .tab-item:hover {
     background-color: #334155;
     color: #f8fafc;
+  }
+
+  .tab-item.dragging {
+    opacity: 0.5;
+  }
+
+  .tab-item.drag-over {
+    border-left: 3px solid #2563eb;
+  }
+
+  :global([data-theme="dark"]) .tab-item.drag-over {
+    border-left-color: #38bdf8;
   }
 
   .tab-item.active {
@@ -2004,6 +2181,25 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 120px;
+  }
+
+  .tab-title-input {
+    font-size: 12px;
+    font-family: inherit;
+    padding: 1px 4px;
+    border: 1px solid #2563eb;
+    border-radius: 3px;
+    background-color: #ffffff;
+    color: #0f172a;
+    outline: none;
+    width: 100px;
+    max-width: 120px;
+  }
+
+  :global([data-theme="dark"]) .tab-title-input {
+    background-color: #0f172a;
+    color: #f8fafc;
+    border-color: #38bdf8;
   }
 
   .tab-close-btn {
