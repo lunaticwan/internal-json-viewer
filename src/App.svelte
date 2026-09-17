@@ -2126,7 +2126,7 @@
     cursor: pointer;
     user-select: none;
     max-width: 180px;
-    transition: background-color 0.12s, color 0.12s;
+    transition: all 0.15s ease-in-out;
   }
 
   :global([data-theme="dark"]) .tab-item {
