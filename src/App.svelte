@@ -151,6 +151,68 @@
   /** 탭 바 Element 레퍼런스 */
   let tabBarEl = $state();
 
+  /** 탭 제목 수정 상태 관리 */
+  let editingTabId = $state(null);
+  let editingTitle = $state('');
+
+  /**
+   * 탭 제목 수정 시작
+   * @param {string} tabId - 수정할 탭 ID
+   * @param {string} currentTitle - 현재 탭 제목
+   */
+  function startRenamingTab(tabId, currentTitle) {
+    editingTabId = tabId;
+    editingTitle = currentTitle;
+    logEvent('TAB', 'start_rename_tab', { tabId, currentTitle });
+  }
+
+  /**
+   * 탭 제목 저장
+   * @param {string} tabId - 저장할 탭 ID
+   */
+  function saveTabTitle(tabId) {
+    if (editingTabId !== tabId) return;
+    const targetTab = tabs.find((t) => t.id === tabId);
+    const trimmed = editingTitle.trim();
+    if (targetTab && trimmed) {
+      targetTab.title = trimmed;
+      targetTab.updatedAt = Date.now();
+      logEvent('TAB', 'save_rename_tab', { tabId, newTitle: trimmed });
+    }
+    editingTabId = null;
+    editingTitle = '';
+  }
+
+  /** 탭 제목 수정 취소 */
+  function cancelRenamingTab() {
+    logEvent('TAB', 'cancel_rename_tab', { tabId: editingTabId });
+    editingTabId = null;
+    editingTitle = '';
+  }
+
+  /**
+   * 탭 제목 입력창 키 다운 핸들러
+   * @param {KeyboardEvent} e - 키보드 이벤트
+   * @param {string} tabId - 탭 ID
+   */
+  function handleTitleKeyDown(e, tabId) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      saveTabTitle(tabId);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelRenamingTab();
+    }
+  }
+
+  /** 입력 엘리먼트 자동 포커스 및 선택 액션 */
+  function autoFocus(node) {
+    node.focus();
+    node.select();
+  }
+
   // ---------------------------------------------------------------------------
   // [파생 상태 (Derived State)]
   // ---------------------------------------------------------------------------
@@ -1320,12 +1382,26 @@
         <div
           class={clsx('tab-item', tab.id === activeTabId && 'active')}
           onclick={() => switchTab(tab.id)}
+          ondblclick={() => startRenamingTab(tab.id, tab.title)}
           onkeydown={(e) => e.key === 'Enter' && switchTab(tab.id)}
           role="button"
           tabindex="0"
         >
           <span class="tab-icon">📄</span>
-          <span class="tab-title" title={tab.title}>{tab.title}</span>
+          {#if editingTabId === tab.id}
+            <input
+              type="text"
+              use:autoFocus
+              class="tab-title-input"
+              bind:value={editingTitle}
+              onkeydown={(e) => handleTitleKeyDown(e, tab.id)}
+              onblur={() => saveTabTitle(tab.id)}
+              onclick={(e) => e.stopPropagation()}
+              ondblclick={(e) => e.stopPropagation()}
+            />
+          {:else}
+            <span class="tab-title" title={tab.title}>{tab.title}</span>
+          {/if}
           <button
             type="button"
             class="tab-close-btn"
@@ -2004,6 +2080,25 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 120px;
+  }
+
+  .tab-title-input {
+    font-size: 12px;
+    font-family: inherit;
+    padding: 1px 4px;
+    border: 1px solid #2563eb;
+    border-radius: 3px;
+    background-color: #ffffff;
+    color: #0f172a;
+    outline: none;
+    width: 100px;
+    max-width: 120px;
+  }
+
+  :global([data-theme="dark"]) .tab-title-input {
+    background-color: #0f172a;
+    color: #f8fafc;
+    border-color: #38bdf8;
   }
 
   .tab-close-btn {
