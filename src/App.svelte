@@ -155,6 +155,84 @@
   let editingTabId = $state(null);
   let editingTitle = $state('');
 
+  /** 탭 드래그 앤 드롭 순서 변경 상태 관리 */
+  let draggedTabId = $state(null);
+  let dragOverTabId = $state(null);
+
+  /**
+   * 탭 드래그 시작 핸들러
+   * @param {DragEvent} e - 드래그 이벤트
+   * @param {string} tabId - 드래그 중인 탭 ID
+   */
+  function handleTabDragStart(e, tabId) {
+    if (editingTabId === tabId) {
+      e.preventDefault();
+      return;
+    }
+    draggedTabId = tabId;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', tabId);
+    logEvent('TAB', 'start_drag_tab', { tabId });
+  }
+
+  /**
+   * 탭 드래그 오버 핸들러
+   * @param {DragEvent} e - 드래그 이벤트
+   * @param {string} tabId - 타겟 탭 ID
+   */
+  function handleTabDragOver(e, tabId) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedTabId && draggedTabId !== tabId) {
+      dragOverTabId = tabId;
+    }
+  }
+
+  /**
+   * 탭 드래그 이탈 핸들러
+   * @param {DragEvent} e - 드래그 이벤트
+   * @param {string} tabId - 타겟 탭 ID
+   */
+  function handleTabDragLeave(e, tabId) {
+    if (dragOverTabId === tabId) {
+      dragOverTabId = null;
+    }
+  }
+
+  /**
+   * 탭 드롭 핸들러 (순서 재배치)
+   * @param {DragEvent} e - 드래그 이벤트
+   * @param {string} targetTabId - 드롭 타겟 탭 ID
+   */
+  function handleTabDrop(e, targetTabId) {
+    e.preventDefault();
+    if (!draggedTabId || draggedTabId === targetTabId) {
+      draggedTabId = null;
+      dragOverTabId = null;
+      return;
+    }
+
+    const fromIndex = tabs.findIndex((t) => t.id === draggedTabId);
+    const toIndex = tabs.findIndex((t) => t.id === targetTabId);
+
+    if (fromIndex !== -1 && toIndex !== -1) {
+      const newTabs = [...tabs];
+      const [movedTab] = newTabs.splice(fromIndex, 1);
+      newTabs.splice(toIndex, 0, movedTab);
+      tabs = newTabs;
+      logEvent('TAB', 'reorder_tab', { draggedTabId, targetTabId, fromIndex, toIndex });
+    }
+
+    draggedTabId = null;
+    dragOverTabId = null;
+  }
+
+  /** 탭 드래그 종료 핸들러 */
+  function handleTabDragEnd() {
+    draggedTabId = null;
+    dragOverTabId = null;
+  }
+
   /**
    * 탭 제목 수정 시작
    * @param {string} tabId - 수정할 탭 ID
@@ -1380,10 +1458,21 @@
     <div class="tab-list">
       {#each tabs as tab (tab.id)}
         <div
-          class={clsx('tab-item', tab.id === activeTabId && 'active')}
+          class={clsx(
+            'tab-item',
+            tab.id === activeTabId && 'active',
+            tab.id === draggedTabId && 'dragging',
+            tab.id === dragOverTabId && 'drag-over'
+          )}
           onclick={() => switchTab(tab.id)}
           ondblclick={() => startRenamingTab(tab.id, tab.title)}
           onkeydown={(e) => e.key === 'Enter' && switchTab(tab.id)}
+          draggable={editingTabId !== tab.id}
+          ondragstart={(e) => handleTabDragStart(e, tab.id)}
+          ondragover={(e) => handleTabDragOver(e, tab.id)}
+          ondragleave={(e) => handleTabDragLeave(e, tab.id)}
+          ondrop={(e) => handleTabDrop(e, tab.id)}
+          ondragend={handleTabDragEnd}
           role="button"
           tabindex="0"
         >
@@ -2054,6 +2143,18 @@
   :global([data-theme="dark"]) .tab-item:hover {
     background-color: #334155;
     color: #f8fafc;
+  }
+
+  .tab-item.dragging {
+    opacity: 0.5;
+  }
+
+  .tab-item.drag-over {
+    border-left: 3px solid #2563eb;
+  }
+
+  :global([data-theme="dark"]) .tab-item.drag-over {
+    border-left-color: #38bdf8;
   }
 
   .tab-item.active {
