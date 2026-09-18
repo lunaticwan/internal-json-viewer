@@ -20,6 +20,7 @@
     calculateDatasetMetrics
   } from './utils/llmUtils.js';
   import { getProcessedData } from './utils/tableUtils.js';
+  import { jsonToCsv } from './utils/csvUtils.js';
   import {
     parseTheme,
     parseFontSize,
@@ -575,6 +576,44 @@
   // [빠른 클립보드 복사 & LLM 액션]
   // ---------------------------------------------------------------------------
 
+  /** 현재 에디터 화면 인쇄 실행 */
+  function handlePrintAction() {
+    logEvent('BUTTON', 'print_document', { mode });
+    window.print();
+  }
+
+  /** CSV 내보내기 다운로드 실행 */
+  function handleExportCsv() {
+    logEvent('BUTTON', 'export_csv');
+    const targetData = content?.json !== undefined ? content.json : rawData;
+    if (!targetData) {
+      showToast('내보낼 데이터가 없습니다.');
+      return;
+    }
+
+    try {
+      const csvStr = jsonToCsv(targetData);
+      const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const activeTab = tabs.find((t) => t.id === activeTabId);
+      const baseName = (activeTab?.title || 'imjson_export').replace(/\.json$/i, '');
+      const fileName = `${baseName}.csv`;
+
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast(`CSV 내보내기 완료 (${fileName})`);
+    } catch (err) {
+      logEvent('BUTTON', 'export_csv_failed', { error: err.message });
+      alert('CSV 변환 중 오류 발생: ' + err.message);
+    }
+  }
+
   /** Formatted JSON 클립보드 복사 */
   function handleCopyFormatted() {
     const targetData = content?.json !== undefined ? content.json : content?.text;
@@ -944,9 +983,11 @@
     logEvent('TABLE', 'open_header_menu', { colKey });
     const rect = targetEl.getBoundingClientRect();
     activeMenuCol = colKey;
+    const isMobile = window.innerWidth <= 768;
+    const popupWidth = isMobile ? Math.min(270, window.innerWidth - 20) : 270;
     menuPos = {
-      top: rect.bottom + window.scrollY + 2,
-      left: Math.max(10, Math.min(rect.left + window.scrollX, window.innerWidth - 280))
+      top: Math.max(10, Math.min(rect.bottom + window.scrollY + 2, window.innerHeight + window.scrollY - 320)),
+      left: Math.max(10, Math.min(rect.left + window.scrollX, window.innerWidth - popupWidth - 10))
     };
     filterSearchQuery = '';
 
@@ -1570,6 +1611,22 @@
       <button
         type="button"
         class="jse-action-chip"
+        onclick={handleExportCsv}
+        title="현재 JSON 데이터를 CSV 파일로 내보내기"
+      >
+        📊 CSV 내보내기
+      </button>
+      <button
+        type="button"
+        class="jse-action-chip"
+        onclick={handlePrintAction}
+        title="현재 화면 문서 인쇄 (Print)"
+      >
+        🖨️ 인쇄
+      </button>
+      <button
+        type="button"
+        class="jse-action-chip"
         onclick={handleCopyFormatted}
         title="Formatted JSON 클립보드 복사"
       >
@@ -1997,10 +2054,9 @@
   .container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 100vh;
     height: 100dvh;
     width: 100%;
-    width: 100dvw;
     background-color: #f8fafc;
     position: relative;
     overflow: hidden;
@@ -2254,6 +2310,21 @@
     color: #94a3b8;
     flex-shrink: 0;
     z-index: 10;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (max-width: 768px) {
+    .jse-stats-bar {
+      padding: 3px 8px;
+      gap: 8px;
+      font-size: 10px;
+    }
+
+    .stats-divider {
+      height: 10px;
+    }
   }
 
   .stats-item {
@@ -2488,6 +2559,9 @@
   .excel-menu-popup {
     position: absolute;
     width: 270px;
+    max-width: calc(100vw - 20px);
+    max-height: 80vh;
+    overflow-y: auto;
     background-color: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
