@@ -237,106 +237,131 @@ pre,
   transition: all 0.15s ease-in-out;
 }
 
-/* 2) 라이트 테마 툴바 색상 */
-:root:not([data-theme="dark"]) .jse-menu {
+/* 2) 라이트 (기본) 테마 툴바 색상 */
+[data-theme="default"] .jse-menu,
+:root:not([data-theme="imbank"]) .jse-menu {
   background: #f1f5f9 !important; /* Slate 100 */
   border-bottom: 1px solid #cbd5e1 !important;
 }
 
-:root:not([data-theme="dark"]) .jse-menu button,
-:root:not([data-theme="dark"]) .jse-menu .jse-button {
+[data-theme="default"] .jse-menu button,
+[data-theme="default"] .jse-menu .jse-button,
+:root:not([data-theme="imbank"]) .jse-menu button,
+:root:not([data-theme="imbank"]) .jse-menu .jse-button {
   color: #334155 !important;
   background: transparent !important;
   border-color: transparent !important;
 }
 
-:root:not([data-theme="dark"]) .jse-menu button:not(.jse-brand-button):hover:not(:disabled),
-:root:not([data-theme="dark"]) .jse-menu .jse-button:not(.jse-brand-button):hover:not(:disabled) {
+[data-theme="default"] .jse-menu button:not(.jse-brand-button):hover:not(:disabled),
+[data-theme="default"] .jse-menu .jse-button:not(.jse-brand-button):hover:not(:disabled),
+:root:not([data-theme="imbank"]) .jse-menu button:not(.jse-brand-button):hover:not(:disabled),
+:root:not([data-theme="imbank"]) .jse-menu .jse-button:not(.jse-brand-button):hover:not(:disabled) {
   background: #e2e8f0 !important;
   color: #0f172a !important;
 }
 
-:root:not([data-theme="dark"]) .editor-container .jse-custom-btn {
+[data-theme="default"] .editor-container .jse-custom-btn,
+:root:not([data-theme="imbank"]) .editor-container .jse-custom-btn {
   background: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #1e293b !important;
 }
 
-:root:not([data-theme="dark"]) .editor-container .jse-custom-btn:hover {
+[data-theme="default"] .editor-container .jse-custom-btn:hover,
+:root:not([data-theme="imbank"]) .editor-container .jse-custom-btn:hover {
   background: #e0f2fe !important;
   border-color: #0284c7 !important;
   color: #0369a1 !important;
 }
 
-:root:not([data-theme="dark"]) .jse-menu .jse-button.jse-group-button {
+[data-theme="default"] .jse-menu .jse-button.jse-group-button,
+:root:not([data-theme="imbank"]) .jse-menu .jse-button.jse-group-button {
   border-color: #cbd5e1 !important;
   background: #ffffff !important;
   color: #475569 !important;
 }
 
-:root:not([data-theme="dark"]) .jse-menu .jse-button.jse-group-button.jse-selected {
+[data-theme="default"] .jse-menu .jse-button.jse-group-button.jse-selected,
+:root:not([data-theme="imbank"]) .jse-menu .jse-button.jse-group-button.jse-selected {
   background: #dc2626 !important;
   border-color: #dc2626 !important;
   color: #ffffff !important;
   box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3) !important;
 }
 
-:root:not([data-theme="dark"]) .jse-menu .jse-separator {
+[data-theme="default"] .jse-menu .jse-separator,
+:root:not([data-theme="imbank"]) .jse-menu .jse-separator {
   background: #cbd5e1 !important;
 }
 
-:root:not([data-theme="dark"]) .jse-font-size-group,
-:root:not([data-theme="dark"]) .jse-row-height-group,
-:root:not([data-theme="dark"]) .jse-sample-group,
-:root:not([data-theme="dark"]) .jse-theme-group {
+[data-theme="default"] .jse-font-size-group,
+[data-theme="default"] .jse-row-height-group,
+[data-theme="default"] .jse-sample-group,
+[data-theme="default"] .jse-theme-group,
+:root:not([data-theme="imbank"]) .jse-font-size-group,
+:root:not([data-theme="imbank"]) .jse-row-height-group,
+:root:not([data-theme="imbank"]) .jse-sample-group,
+:root:not([data-theme="imbank"]) .jse-theme-group {
   background: #ffffff;
   border-color: #cbd5e1;
 }
 
-:root:not([data-theme="dark"]) .jse-control-label {
+[data-theme="default"] .jse-control-label,
+:root:not([data-theme="imbank"]) .jse-control-label {
   color: #475569;
 }
 
-:root:not([data-theme="dark"]) .jse-font-size-btn,
-:root:not([data-theme="dark"]) .jse-theme-toggle-btn {
+[data-theme="default"] .jse-font-size-btn,
+[data-theme="default"] .jse-theme-toggle-btn,
+:root:not([data-theme="imbank"]) .jse-font-size-btn,
+:root:not([data-theme="imbank"]) .jse-theme-toggle-btn {
   color: #0f172a;
 }
 
-:root:not([data-theme="dark"]) .jse-font-size-btn:hover:not(:disabled),
-:root:not([data-theme="dark"]) .jse-theme-toggle-btn:hover {
+[data-theme="default"] .jse-font-size-btn:hover:not(:disabled),
+[data-theme="default"] .jse-theme-toggle-btn:hover,
+:root:not([data-theme="imbank"]) .jse-font-size-btn:hover:not(:disabled),
+:root:not([data-theme="imbank"]) .jse-theme-toggle-btn:hover {
   background: #e0f2fe;
   color: #0284c7;
 }
 
-:root:not([data-theme="dark"]) .jse-font-size-select {
+[data-theme="default"] .jse-font-size-select,
+:root:not([data-theme="imbank"]) .jse-font-size-select {
   background: #ffffff;
   color: #0f172a;
   border-color: #cbd5e1;
 }
 
-:root:not([data-theme="dark"]) .jse-font-size-select option {
+[data-theme="default"] .jse-font-size-select option,
+:root:not([data-theme="imbank"]) .jse-font-size-select option {
   background: #ffffff;
   color: #0f172a;
 }
 
-:root:not([data-theme="dark"]) .jse-action-chip {
+[data-theme="default"] .jse-action-chip,
+:root:not([data-theme="imbank"]) .jse-action-chip {
   background: #ffffff;
   border-color: #cbd5e1;
   color: #334155;
 }
 
-:root:not([data-theme="dark"]) .jse-action-chip:hover {
+[data-theme="default"] .jse-action-chip:hover,
+:root:not([data-theme="imbank"]) .jse-action-chip:hover {
   background: #f1f5f9;
   color: #0f172a;
 }
 
-:root:not([data-theme="dark"]) .jse-action-chip.repair-chip {
+[data-theme="default"] .jse-action-chip.repair-chip,
+:root:not([data-theme="imbank"]) .jse-action-chip.repair-chip {
   background: #fef2f2;
   border-color: #fca5a5;
   color: #dc2626;
 }
 
-:root:not([data-theme="dark"]) .jse-action-chip.repair-chip:hover {
+[data-theme="default"] .jse-action-chip.repair-chip:hover,
+:root:not([data-theme="imbank"]) .jse-action-chip.repair-chip:hover {
   background: #fee2e2;
 }
 
@@ -953,18 +978,341 @@ pre,
 }
 
 /* 라이트 테마 셀 텍스트 색상 */
-:root:not([data-theme="dark"]) .jse-table-mode td,
-:root:not([data-theme="dark"]) .jse-table-mode input,
-:root:not([data-theme="dark"]) .jse-table-mode .jse-value-string,
-:root:not([data-theme="dark"]) .jse-table-mode .jse-value-unquoted,
-:root:not([data-theme="dark"]) .jse-table-mode .jse-value {
+:root:not([data-theme="dark"]):not([data-theme="imbank"]) .jse-table-mode td,
+:root:not([data-theme="dark"]):not([data-theme="imbank"]) .jse-table-mode input,
+:root:not([data-theme="dark"]):not([data-theme="imbank"]) .jse-table-mode .jse-value-string,
+:root:not([data-theme="dark"]):not([data-theme="imbank"]) .jse-table-mode .jse-value-unquoted,
+:root:not([data-theme="dark"]):not([data-theme="imbank"]) .jse-table-mode .jse-value {
   color: #0f172a !important;
 }
 
-:root:not([data-theme="dark"]) .jse-table-mode .jse-value-number {
+:root:not([data-theme="dark"]):not([data-theme="imbank"]) .jse-table-mode .jse-value-number {
   color: #0284c7 !important;
 }
 
-:root:not([data-theme="dark"]) .jse-table-mode .jse-value-boolean {
+:root:not([data-theme="dark"]):not([data-theme="imbank"]) .jse-table-mode .jse-value-boolean {
   color: #16a34a !important;
+}
+
+/* ==========================================================================
+   iMBank Theme 디자인 (iMBank Theme Styling)
+   ========================================================================== */
+
+/*
+  Primary Color:
+    - iM Mint: #00C7A9
+    - iM Lime: #E2F156
+    - iM Gradient: linear-gradient(135deg, #00C7A9 0%, #E2F156 100%)
+  Secondary Color:
+    - iM Blue: #7DB5FF
+    - iM Purple: #D1B5FF
+    - iM Light Blue: #53E1E5
+    - iM Beige: #CDC9B7
+  Logotype Color:
+    - iM Gray: #666666
+*/
+
+[data-theme="imbank"] html,
+[data-theme="imbank"] body,
+[data-theme="imbank"] #app,
+[data-theme="imbank"] .container {
+  background-color: #f4fbf9 !important;
+  color: #111827 !important;
+}
+
+/* 1) iMBank 툴바 & 브랜드 로고 */
+[data-theme="imbank"] .jse-menu {
+  background: #ffffff !important;
+  border-bottom: 2px solid #00C7A9 !important;
+  box-shadow: 0 2px 10px rgba(0, 199, 169, 0.12) !important;
+}
+
+[data-theme="imbank"] .jse-menu .jse-brand-button,
+[data-theme="imbank"] .jse-menu .jse-brand-button:hover {
+  color: #00C7A9 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="imbank"] .jse-menu button:not(.jse-brand-button),
+[data-theme="imbank"] .jse-menu .jse-button:not(.jse-brand-button) {
+  color: #374151 !important;
+  background: #f0fdf9 !important;
+  border-color: #00C7A9 !important;
+}
+
+[data-theme="imbank"] .jse-menu button:not(.jse-brand-button):hover:not(:disabled),
+[data-theme="imbank"] .jse-menu .jse-button:not(.jse-brand-button):hover:not(:disabled) {
+  background: #00C7A9 !important;
+  color: #ffffff !important;
+  border-color: #00C7A9 !important;
+}
+
+[data-theme="imbank"] .editor-container .jse-custom-btn {
+  background: #f0fdf9 !important;
+  border-color: #00C7A9 !important;
+  color: #047857 !important;
+}
+
+[data-theme="imbank"] .editor-container .jse-custom-btn:hover {
+  background: #00C7A9 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="imbank"] .jse-menu .jse-button.jse-group-button {
+  border-color: #00C7A9 !important;
+  background: #ffffff !important;
+  color: #047857 !important;
+}
+
+[data-theme="imbank"] .jse-menu .jse-button.jse-group-button.jse-selected {
+  background: linear-gradient(135deg, #00C7A9 0%, #00a88f 100%) !important;
+  border-color: #00C7A9 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 199, 169, 0.4) !important;
+}
+
+[data-theme="imbank"] .jse-menu .jse-separator {
+  background: #b2f5ea !important;
+}
+
+[data-theme="imbank"] .jse-font-size-group,
+[data-theme="imbank"] .jse-row-height-group,
+[data-theme="imbank"] .jse-sample-group,
+[data-theme="imbank"] .jse-theme-group {
+  background: #ffffff !important;
+  border-color: #00C7A9 !important;
+}
+
+[data-theme="imbank"] .jse-control-label {
+  color: #047857 !important;
+}
+
+[data-theme="imbank"] .jse-font-size-btn {
+  color: #047857 !important;
+}
+
+[data-theme="imbank"] .jse-font-size-btn:hover:not(:disabled) {
+  background: #e6fffa !important;
+  color: #00C7A9 !important;
+}
+
+[data-theme="imbank"] .jse-font-size-select {
+  background: #ffffff !important;
+  color: #047857 !important;
+  border-color: #00C7A9 !important;
+}
+
+[data-theme="imbank"] .jse-font-size-select option {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+[data-theme="imbank"] .jse-action-chip {
+  background: #ffffff !important;
+  border-color: #00C7A9 !important;
+  color: #047857 !important;
+}
+
+[data-theme="imbank"] .jse-action-chip:hover {
+  background: #00C7A9 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="imbank"] .jse-action-chip.repair-chip {
+  background: #fffbe2 !important;
+  border-color: #E2F156 !important;
+  color: #854d0e !important;
+}
+
+[data-theme="imbank"] .jse-action-chip.repair-chip:hover {
+  background: #E2F156 !important;
+  color: #111827 !important;
+}
+
+/* 2) iMBank 탭 바 */
+[data-theme="imbank"] .imjson-tab-bar {
+  background-color: #e6fffa !important;
+  border-bottom: 1px solid #b2f5ea !important;
+}
+
+[data-theme="imbank"] .tab-item {
+  background-color: #ccfbf1 !important;
+  color: #047857 !important;
+  border-color: #99f6e4 !important;
+}
+
+[data-theme="imbank"] .tab-item:hover {
+  background-color: #99f6e4 !important;
+  color: #065f46 !important;
+}
+
+[data-theme="imbank"] .tab-item.active {
+  background-color: #ffffff !important;
+  color: #00C7A9 !important;
+  font-weight: 800 !important;
+  border-color: #00C7A9 !important;
+  border-bottom: 2px solid #00C7A9 !important;
+}
+
+[data-theme="imbank"] .tab-add-btn {
+  border-color: #00C7A9 !important;
+  color: #047857 !important;
+}
+
+[data-theme="imbank"] .tab-add-btn:hover {
+  background-color: #00C7A9 !important;
+  color: #ffffff !important;
+}
+
+/* 3) iMBank 에디터 메인 뷰 (Tree, Code, Table) */
+[data-theme="imbank"] .jse-main,
+[data-theme="imbank"] .jse-contents,
+[data-theme="imbank"] .jse-tree-mode,
+[data-theme="imbank"] .jse-text-mode,
+[data-theme="imbank"] .jse-code-mode,
+[data-theme="imbank"] .cm-editor,
+[data-theme="imbank"] .cm-gutters {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+/* 키 & 값 컬러 */
+[data-theme="imbank"] .jse-key {
+  color: #0284c7 !important; /* 가독성을 고려한 진한 스카이블루/블루 (#0284c7) */
+}
+
+[data-theme="imbank"] .jse-value-string {
+  color: #059669 !important; /* iM Mint 기반 명확한 텍스트 숲색 (#059669) */
+}
+
+[data-theme="imbank"] .jse-value-number {
+  color: #7c3aed !important; /* iM Purple 보라 강조 (#7c3aed) */
+}
+
+[data-theme="imbank"] .jse-value-boolean {
+  color: #0284c7 !important;
+}
+
+[data-theme="imbank"] .jse-value-null {
+  color: #666666 !important; /* iM Gray */
+}
+
+/* 4) iMBank 테이블 모드 (Table Mode) */
+[data-theme="imbank"] .jse-table-mode {
+  background-color: #ffffff !important;
+}
+
+[data-theme="imbank"] .jse-table-mode th,
+[data-theme="imbank"] .jse-table-mode .jse-table-cell-header {
+  background-color: #e6fffa !important;
+  color: #065f46 !important;
+  border: 1px solid #99f6e4 !important;
+}
+
+[data-theme="imbank"] .jse-table-mode th.jse-table-cell-gutter {
+  background-color: #f0fdf9 !important;
+  color: #666666 !important;
+}
+
+[data-theme="imbank"] .jse-table-mode td,
+[data-theme="imbank"] .jse-table-mode .jse-table-cell {
+  border: 1px solid #ccfbf1 !important;
+}
+
+[data-theme="imbank"] .jse-table-mode tr:nth-child(even) td {
+  background-color: #f7fee7 !important; /* iM Lime 은은한 짝수행 배경 */
+}
+
+[data-theme="imbank"] .jse-table-mode tr:hover td {
+  background-color: #e6fffa !important;
+}
+
+[data-theme="imbank"] .jse-table-mode td.jse-selected,
+[data-theme="imbank"] .jse-table-mode td:focus-within {
+  outline: 2px solid #00C7A9 !important;
+}
+
+[data-theme="imbank"] .jse-table-mode td,
+[data-theme="imbank"] .jse-table-mode input,
+[data-theme="imbank"] .jse-table-mode .jse-value-string,
+[data-theme="imbank"] .jse-table-mode .jse-value-unquoted,
+[data-theme="imbank"] .jse-table-mode .jse-value {
+  color: #111827 !important;
+}
+
+[data-theme="imbank"] .jse-table-mode .jse-value-number {
+  color: #7c3aed !important;
+}
+
+[data-theme="imbank"] .jse-table-mode .jse-value-boolean {
+  color: #0284c7 !important;
+}
+
+/* 5) iMBank 서브 스탯바 (VS Code UX 하단 Status Bar) */
+[data-theme="imbank"] .jse-stats-bar {
+  background-color: #047857 !important;
+  border-top: 1px solid #065f46 !important;
+  color: #e6fffa !important;
+}
+
+[data-theme="imbank"] .jse-stats-bar .stats-label {
+  color: #a7f3d0 !important;
+}
+
+[data-theme="imbank"] .jse-stats-bar .stats-value {
+  color: #ffffff !important;
+}
+
+[data-theme="imbank"] .jse-stats-bar .stats-divider {
+  background-color: #065f46 !important;
+}
+
+/* 6) iMBank 헤더 엑셀 정렬/필터 상태바 */
+[data-theme="imbank"] .excel-status-bar {
+  background-color: #e6fffa !important;
+  border-bottom: 1px solid #99f6e4 !important;
+  color: #047857 !important;
+}
+
+[data-theme="imbank"] .excel-reset-btn {
+  background: #ffffff !important;
+  border-color: #00C7A9 !important;
+  color: #00C7A9 !important;
+}
+
+/* 7) iMBank 엑셀 정렬/필터 팝업 메뉴 */
+[data-theme="imbank"] .excel-menu-popup {
+  background-color: #ffffff !important;
+  border: 1px solid #00C7A9 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 199, 169, 0.2) !important;
+}
+
+[data-theme="imbank"] .excel-menu-popup .col-title {
+  color: #047857 !important;
+}
+
+[data-theme="imbank"] .excel-menu-popup .menu-action-btn {
+  color: #1f2937 !important;
+}
+
+[data-theme="imbank"] .excel-menu-popup .menu-action-btn:hover {
+  background-color: #e6fffa !important;
+}
+
+[data-theme="imbank"] .excel-menu-popup .menu-action-btn.highlight {
+  color: #00C7A9 !important;
+}
+
+[data-theme="imbank"] .excel-menu-popup .filter-search-input {
+  border-color: #00C7A9 !important;
+}
+
+[data-theme="imbank"] .excel-menu-popup .value-list-container {
+  border-color: #99f6e4 !important;
+}
+
+[data-theme="imbank"] .excel-menu-popup .btn-sub.primary-sub {
+  background-color: #00C7A9 !important;
+  border-color: #00C7A9 !important;
+  color: #ffffff !important;
 }

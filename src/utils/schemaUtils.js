@@ -7,8 +7,8 @@
 import { z } from 'zod';
 import { FONT_SIZES, ROW_HEIGHTS } from '../constants/editor.js';
 
-/** 테마 스키마 ('light' | 'dark') */
-export const themeSchema = z.enum(['light', 'dark']).catch('light');
+/** 테마 스키마 ('default' | 'imbank') */
+export const themeSchema = z.enum(['default', 'imbank']).catch('default');
 
 /** 폰트 크기 스키마 (허용 폰트 크기 배열 포함 여부 검증) */
 export const fontSizeSchema = z.number().refine((val) => FONT_SIZES.includes(val), {

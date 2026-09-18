@@ -12,11 +12,11 @@ import {
 } from './schemaUtils.js';
 
 describe('schemaUtils - Zod 설정 파싱 검증', () => {
-  it('유효한 테마 수용 및 잘못된 테마 기본값(light) 처리', () => {
-    expect(parseTheme('dark')).toBe('dark');
-    expect(parseTheme('light')).toBe('light');
-    expect(parseTheme('invalid_theme')).toBe('light');
-    expect(parseTheme(null)).toBe('light');
+  it('유효한 테마 수용 및 잘못된 테마 기본값(default) 처리', () => {
+    expect(parseTheme('default')).toBe('default');
+    expect(parseTheme('imbank')).toBe('imbank');
+    expect(parseTheme('invalid_theme')).toBe('default');
+    expect(parseTheme(null)).toBe('default');
   });
 
   it('허용된 폰트 크기 파싱 및 범위 벗어난 경우 기본값(15) 반환', () => {

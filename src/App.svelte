@@ -45,10 +45,10 @@
   let selectedCodeFontValue = $state(PRESET_CODE_FONTS[0].value);
   let customCodeFont = $state('');
 
-  /** 폰트 크기(px), 행 높이(px) 및 테마 상태 ('light' | 'dark') */
+  /** 폰트 크기(px), 행 높이(px) 및 테마 상태 ('default' | 'imbank') */
   let fontSize = $state(15);
   let rowHeight = $state('24px');
-  let theme = $state('light');
+  let theme = $state('default');
 
   /** 에디터 상단 커스텀 툴바 영역 Element 레퍼런스 */
   let toolbarControlsEl = $state();
@@ -643,11 +643,10 @@
   /** 테마 속성 적용 및 로컬 스토리지 저장 */
   function applyTheme() {
     logEvent('SETTING', 'apply_theme', { theme });
+    document.documentElement.setAttribute('data-theme', theme);
     if (theme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('jse-theme-dark');
     } else {
-      document.documentElement.setAttribute('data-theme', 'light');
       document.documentElement.classList.remove('jse-theme-dark');
     }
     try {
@@ -657,10 +656,10 @@
     }
   }
 
-  /** 라이트/다크 테마 토글 */
-  function toggleTheme() {
-    const nextTheme = theme === 'light' ? 'dark' : 'light';
-    logEvent('BUTTON', 'toggle_theme', { from: theme, to: nextTheme });
+  /** 테마 변경 처리 */
+  function handleThemeChange(e) {
+    const nextTheme = e.target.value;
+    logEvent('BUTTON', 'select_theme', { from: theme, to: nextTheme });
     theme = nextTheme;
     applyTheme();
   }
@@ -1595,16 +1594,17 @@
       {/if}
     </div>
 
-    <!-- 테마 토글 -->
+    <!-- 테마 스위쳐 (셀렉트박스) -->
     <div class="jse-theme-group">
-      <button
-        type="button"
-        class="jse-theme-toggle-btn"
-        onclick={toggleTheme}
-        title={theme === 'light' ? '다크 테마로 변경' : '라이트 테마로 변경'}
+      <select
+        class="jse-font-size-select jse-theme-select"
+        value={theme}
+        onchange={handleThemeChange}
+        title="테마 선택"
       >
-        {theme === 'light' ? '☀️ 라이트' : '🌙 다크'}
-      </button>
+        <option value="default">Default Theme</option>
+        <option value="imbank">iMBank Theme</option>
+      </select>
     </div>
   </div>
 
