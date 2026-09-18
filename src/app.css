@@ -602,11 +602,25 @@ pre,
    모바일 반응형 툴바 및 레이아웃 (Mobile Responsive Toolbar & Layout)
    ========================================================================== */
 @media (max-width: 768px) {
+  .imjson-tab-bar {
+    padding: 2px 4px 0 4px !important;
+  }
+
+  .tab-item {
+    padding: 3px 6px !important;
+    font-size: 11px !important;
+    max-width: 130px !important;
+  }
+
+  .tab-title {
+    max-width: 80px !important;
+  }
+
   .jse-menu {
     min-height: auto !important;
     height: auto !important;
-    padding: 6px 8px !important;
-    gap: 4px 6px !important;
+    padding: 4px 6px !important;
+    gap: 3px 4px !important;
     flex-wrap: wrap !important;
     overflow: visible !important;
     white-space: normal !important;
@@ -967,4 +981,59 @@ pre,
 
 :root:not([data-theme="dark"]) .jse-table-mode .jse-value-boolean {
   color: #16a34a !important;
+}
+
+/* ==========================================================================
+   인쇄 전용 스타일 (@media print)
+   ========================================================================== */
+@media print {
+  /* 1. 비데이터 UI 요소 숨김 */
+  .jse-menu,
+  .imjson-tab-bar,
+  .jse-stats-bar,
+  .excel-status-bar,
+  .toast-notification,
+  .drag-drop-overlay,
+  .modal-backdrop,
+  .excel-backdrop,
+  .excel-header-trigger,
+  .excel-col-resizer {
+    display: none !important;
+  }
+
+  /* 2. 전체 페이지 및 컨테이너 스크롤 해제 */
+  html, body, #app, .container, .editor-container, .jse-main, .jse-contents, .jse-tree-mode, .jse-table-mode, .jse-text-mode, .jse-code-mode, .cm-editor, .cm-scroller {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* 3. 인쇄 시 색상 및 레이아웃 출력을 선명하게 보존 */
+  body, .jse-main {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 4. 테이블 모드 인쇄 구조 최적화 */
+  .jse-table-mode table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  .jse-table-mode tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  .jse-table-mode th,
+  .jse-table-mode td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 4px 8px !important;
+    font-size: 11pt !important;
+  }
 }
