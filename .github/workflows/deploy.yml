@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -41,13 +41,47 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: 환경 변수 및 빌드 경로 감지
+        run: |
+          BUILD_DATE=$(date +'%Y%m%d')
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+
+          if [ -d "dist" ]; then
+            BUILD_DIR="dist"
+          elif [ -d "build" ]; then
+            BUILD_DIR="build"
+          elif [ -d "out" ]; then
+            BUILD_DIR="out"
+          else
+            echo "빌드 디렉토리를 찾을 수 없습니다 (dist, build, out)."
+            exit 1
+          fi
+          echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
+
+          ZIP_NAME="${{ github.event.repository.name }}-${BUILD_DATE}-run${{ github.run_number }}.zip"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: 빌드 산출물 압축 (ZIP)
+        run: |
+          cd "${{ env.BUILD_DIR }}"
+          zip -r "../${{ env.ZIP_NAME }}" .
+
+      - name: GitHub Release 자동 발행
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="v${{ env.BUILD_DATE }}-${{ github.run_number }}"
+          gh release create "$TAG_NAME" "${{ env.ZIP_NAME }}" \
+            --title "$TAG_NAME" \
+            --generate-notes
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: './${{ env.BUILD_DIR }}'
 
       - name: Deploy to GitHub Pages
         id: deployment
