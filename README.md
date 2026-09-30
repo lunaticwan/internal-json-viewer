@@ -143,3 +143,36 @@ LLM 및 AI 시스템(예: **Jules**)이 프로젝트의 동작 원리와 구현 
    - `svelte-jsoneditor`의 `onRenderMenu` 및 `onRenderContextMenu` 훅에 바인딩되어 있으며, DOM 변환 observer (`setupI18nObserver`)로 검색창, 모달 등의 텍스트를 실시간 한글화합니다.
 6. **AI 에이전트용 추가 가이드**:
    - 프로젝트 루트의 `AGENTS.md` 파일에 개발 규칙, 모듈별 규칙, 테스팅 전략 및 수정 시 주의사항이 자세히 정리되어 있습니다.
+
+---
+
+## 📄 라이선스 및 오픈소스 (License & Open Source Notice)
+
+iMJSON 에디터 프로젝트는 오픈소스 소프트웨어 라이선스를 준수하며, 오픈소스 생태계의 기여를 기반으로 제작되었습니다.
+
+### 1. 주요 핵심 라이브러리 라이선스 현황
+
+본 프로젝트에서 사용 중인 명시적 핵심 라이브러리 및 관련 라이선스 목록입니다.
+
+| 라이브러리 | 버전 | 라이선스 | 용도 및 설명 |
+| :--- | :--- | :--- | :--- |
+| **svelte-jsoneditor** | ^3.13.0 | **ISC** | 기본 JSON 에디터 엔진 (Tree, Table, Code 모드 기반) |
+| **svelte** | ^5.57.0 | **MIT** | 프론트엔드 UI 컴포넌트 라이브러리 및 상태 관리 |
+| **vite** | ^8.2.2 | **MIT** | 웹 애플리케이션 개발 서버 및 최적화 빌드 도구 |
+| **zod** | ^4.6.1 | **MIT** | 설정값 및 스키마 검증 유틸리티 |
+| **clsx** | ^2.1.1 | **MIT** | 조건부 CSS 클래스명 병합 유틸리티 |
+| **vite-plugin-pwa** | ^1.3.0 | **MIT** | 오프라인 및 PWA Service Worker 번들링 |
+| **vitest** | ^5.0.0 | **MIT** | 고성능 단위 테스트 프레임워크 |
+
+### 2. 오픈소스 라이브러리 커스터마이징 및 확장 사항
+
+본 프로젝트에서는 핵심 의존 라이브러리인 `svelte-jsoneditor`를 직접 수정하지 않고, 상위 모듈 래핑 및 DOM 커스터마이징 기술을 적용하여 사내 내부망 및 UX 요구사항에 맞게 기능을 확장하여 커스터마이징했습니다.
+
+- **메뉴 & 툴바 커스터마이징 (`App.svelte` / `onRenderMenu`)**:
+  - 에디터 상단 툴바 메뉴에 브랜드 타이틀(`iMJSON`), 파일 열기/저장 액션, 폰트/행높이 설정, 다이렉트 테마 선택기 토글을 일체형으로 통합 및 확장함.
+- **한국어 i18n 렌더러 통합 (`src/i18n.js`)**:
+  - `onRenderMenu`, `onRenderContextMenu` 훅 및 `MutationObserver`를 적용하여 툴바, 컨텍스트 메뉴, 검색창, 경로 바, 모달 UI를 한국어로 실시간 다국어 처리함.
+- **Table 모드 UX & DOM 커스터마이징 (`decorateTableHeaders`)**:
+  - 기본 테이블 헤더 영역에 인라인 정렬(Single/Multi-Sort), 필터 팝업 액션 버튼, 컬럼 폭 조절 패드(`.excel-col-resizer`)를 동적 주입하여 구글 스프레드시트/엑셀 스타일 인터랙션을 구현함.
+- **다크 테마 & 전역 CSS 오버라이딩 (`src/app.css`)**:
+  - `--jse-*` CSS 변수와 CodeMirror 스타일 오버라이딩을 적용하여 iMBank 테마 및 다크 모드(`data-theme="dark"`) 지원.
